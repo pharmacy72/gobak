@@ -1,0 +1,27 @@
+
+0.3
+    [+] db check -noclear|-n option
+    [+] db backup start/end
+    [*] fix crash when error
+
+0.2
+    [*] Fix parent for zero level backup
+    [+] CLI Global flag "--verbose"
+    [+] repository stat --id: view information a backup
+    [+] repository pack: show released space disk
+    [+] repository stat: flag --hash for check a hash of backups
+    [+] repository stat and list: size of each and all backups
+
+0.1
+    [*] Refactor: CLI flags
+    [+] Add to config: User DBA Firebird
+    [+] When empty config.Password, config.User lookup ISC_USER ISC_PASSWORD
+    [+] Repository statistic: add column "Actual"
+    [+] Add service managment: start/stop/restart/uninstall
+
+0.0.2.6
+    [+] Levels: set period. Example {"level":2 "tick" "D:10"} - 10,20,30,31 day of month
+    [+] Auto checkbase for level
+    [+] Auto checkbase from command line
+    [+] Additional information in statistic(-stat)
+    [*] Refactoring: levels, check actual

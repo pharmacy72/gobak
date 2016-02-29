@@ -1,0 +1,28 @@
+{
+  "PathToNbackup": "/usr/bin/nbackup",
+  "DirectIO":true,
+  "PathToBackupFolder": "/home/inf/test/backup/",
+  "AliasDb": "/home/bases/clear_base.fdb",
+  "User": "sysdba",
+  "Password": "armiz0n",
+  "Physicalpathdb": "/home/bases/clear_base.fdb",
+  "EmailFrom": "testtest@pharm-tmn.ru",
+  "EmailTo": "arteev@pharm-tmn.ru",
+  "SmtpServer": "192.168.146.3:25",
+  "Pathtogfix": "/usr/bin/gfix",
+  "NameBase": "TESTDB",
+  "TimeMlsc": 6000,
+  "levels":[
+    {
+      "level":0,
+      "tick":"H",
+      "check":false
+    },
+    {
+      "level":1,
+      "tick":"N:5",
+      "check" : false
+    }
+  ]
+}
+
