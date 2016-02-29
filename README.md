@@ -3,6 +3,7 @@
 ## Description
 
 ## Documentation
+ * [Changelog](changelog.txt)
 
 ## Dependencies
 
