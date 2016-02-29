@@ -3,6 +3,7 @@
 ## Description
 
 ## Documentation
+ * [Installation](install.md)
  * [Changelog](changelog.txt)
 
 ## Dependencies
