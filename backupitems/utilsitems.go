@@ -1,9 +1,9 @@
 package backupitems
 
 import (
-	"gobak/fileutils"
-	"gobak/md5f"
-	"gobak/zip"
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/md5f"
+	"github.com/pharmacy72/gobak/zip"
 	"os"
 )
 

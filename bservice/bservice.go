@@ -2,11 +2,11 @@ package bservice
 
 import (
 	"errors"
-	"gobak/backupitems"
-	"gobak/config"
-	"gobak/dbase"
-	"gobak/fileutils"
-	"gobak/level"
+	"github.com/pharmacy72/gobak/backupitems"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/dbase"
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/level"
 	"log"
 	"os"
 
@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"fmt"
-	"gobak/command"
-	"gobak/dbfile"
+	"github.com/pharmacy72/gobak/command"
+	"github.com/pharmacy72/gobak/dbfile"
 	"strconv"
-	"gobak/errout"
+	"github.com/pharmacy72/gobak/errout"
 )
 
 // Errors

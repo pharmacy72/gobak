@@ -2,7 +2,7 @@ package zip
 
 import (
 	"archive/zip"
-	"gobak/fileutils"
+	"github.com/pharmacy72/gobak/fileutils"
 	"io"
 	"log"
 	"os"

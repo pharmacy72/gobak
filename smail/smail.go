@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"gobak/config"
+	"github.com/pharmacy72/gobak/config"
 	"io/ioutil"
 	"log"
 	"net/smtp"
