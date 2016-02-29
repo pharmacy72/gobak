@@ -4,6 +4,6 @@
 
 * gobak -install
 
-## Uninstallation
+## Uninstall
 
 * gobak -uninstall
