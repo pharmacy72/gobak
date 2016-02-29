@@ -10,7 +10,8 @@ gobak (Go utilites for nbackup firebird)
  * [Changelog](changelog.txt)
  
  
-## Dependencies
+## Install
+go get github.com/pharmacy72/gobak
 
 ## License
 MIT:
