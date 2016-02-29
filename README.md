@@ -1,14 +1,16 @@
-# gobak utilites for nbackup [FireBird](http://firebirdsql.org) on Golang
+======================================
+gobak (Go utilites for nbackup firebird)
+======================================
 
 ## Description
+ * utilites for nbackup [FireBird](http://firebirdsql.org) on Golang
 
 ## Documentation
- * [Installation](install.md)
  * [Changelog](changelog.txt)
-
+ 
+ 
 ## Dependencies
 
-### Tests
 ## License
 MIT:
 
