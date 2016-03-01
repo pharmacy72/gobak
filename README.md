@@ -18,4 +18,5 @@ MIT:
 
 ## Authors
 Arteev Aleksey
+
 Gordienko Roman
