@@ -7,6 +7,7 @@ gobak (Go utility for nbackup firebird)
  * utility for nbackup [FireBird](http://firebirdsql.org) on Golang
 
 ## Documentation
+ * [Qiuckstart](quickstart.md)
  * [Changelog](changelog.txt)
  
 ## Description config.json
