@@ -8,11 +8,12 @@ import (
 	"os"
 	"path/filepath"
 )
+type tst func() error
 
 //DoZipFile pack file "filename" to the destination file "filename".zip
 func DoZipFile(filename string) error {
 	//check exist file
-
+   
 	if fileutils.Exists(filename + ".zip") {
 		err := fileutils.ErrFileAlreadyExists
 		log.Println("err", err)
@@ -22,32 +23,31 @@ func DoZipFile(filename string) error {
 	newfile, err := os.Create(filename + ".zip")
 	if err != nil {
 		return err
-	}
-	defer checkError(newfile.Close())
+	}	 
+   defer checkErrorFunc(newfile.Close)
 
-	zipit := zip.NewWriter(newfile)
-
-	defer checkError(zipit.Close())
-
+	zipit := zip.NewWriter(newfile)	
+	defer checkErrorFunc(zipit.Close)
+    
 	zipfile, err := os.Open(filename)
 	if err != nil {
 		return err
-	}
-	defer checkError(zipfile.Close())
-
+	}	
+	defer checkErrorFunc(zipfile.Close)
+   
 	// get the file information
 	info, err := zipfile.Stat()
-	if err != nil {
+	if err != nil {		
 		return err
 	}
-
+   
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		return err
 	}
 
 	header.Method = zip.Deflate
-
+    
 	writer, err := zipit.CreateHeader(header)
 	if err != nil {
 		return err
@@ -58,6 +58,12 @@ func DoZipFile(filename string) error {
 }
 
 func checkError(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func checkErrorFunc(fnc tst) {
+	e:=fnc()
 	if e != nil {
 		panic(e)
 	}
@@ -83,9 +89,8 @@ func cloneZipItem(f *zip.File, outDir string) {
 
 //DoExtractFile Unzip the file to the destination folder
 func DoExtractFile(zipPath, outDir string) error {
-	r, err := zip.OpenReader(zipPath)
-	//checkError(err)
-	defer checkError(r.Close())
+	r, err := zip.OpenReader(zipPath)	
+	defer checkErrorFunc(r.Close)
 	if err != nil {
 		return err
 	}
