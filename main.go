@@ -9,18 +9,17 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gobak/bservice"
-	"gobak/config"
-	"gobak/dbopers"
-	"gobak/errout"
-	"gobak/fileutils"
-	"gobak/smail"
-	"gobak/svc"
+	"github.com/pharmacy72/gobak/bservice"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/dbopers"
+	"github.com/pharmacy72/gobak/errout"
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/smail"
+	"github.com/pharmacy72/gobak/svc"
 	"log"
 	"os"
 	"strconv"
 	"time"
-
 	"github.com/codegangsta/cli"
 	"github.com/kardianos/service"
 )
@@ -249,6 +248,7 @@ func (a *application) repostat(c *cli.Context) {
 
 func (a *application) repopack(c *cli.Context) {
 	if err := dbopers.DoPackItemsServ(a.Verbose); err != nil {
+		
 		smail.MailSend("Zipping err "+err.Error(), "Zipping err", "", "")
 		panic(err)
 	} else {

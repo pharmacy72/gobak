@@ -17,6 +17,7 @@ var (
 //FileCopy Copy source file to dest with option overwrite
 func FileCopy(source, dest string, overwrite bool) (bool, error) {
 	in, err := os.Open(source)
+	defer in.Close()
 	if err != nil {
 		return false, err
 	}
@@ -36,6 +37,7 @@ func FileCopy(source, dest string, overwrite bool) (bool, error) {
 	}
 
 	out, eout := os.Create(dest)
+	defer out.Close()
 	if eout != nil {
 		return false, eout
 	}

@@ -3,11 +3,11 @@ package dbfile
 import (
 	"errors"
 	"fmt"
-	"gobak/config"
-	"gobak/fileutils"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/fileutils"
 
-	"gobak/command"
-	"gobak/errout"
+	"github.com/pharmacy72/gobak/command"
+	"github.com/pharmacy72/gobak/errout"
 	"os"
 	"strings"
 )

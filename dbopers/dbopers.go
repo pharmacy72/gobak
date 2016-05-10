@@ -2,13 +2,14 @@ package dbopers
 
 import (
 	"fmt"
-	"gobak/backupitems"
-	"gobak/bservice"
-	"gobak/config"
-	"gobak/dbase"
-	"gobak/dbfile"
-	"gobak/fileutils"
-	"gobak/level"
+	"github.com/pharmacy72/gobak/backupitems"
+	"github.com/pharmacy72/gobak/bservice"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/dbase"
+	"github.com/pharmacy72/gobak/dbfile"
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/level"
+	"github.com/pharmacy72/gobak/firebird"
 	"log"
 	"path/filepath"
 	"strconv"
@@ -118,29 +119,46 @@ func DoCopyDataBase(dest string, ovewrite bool, verbose bool) (err error) {
 
 //DoBackup do backup current database
 func DoBackup(verbose bool) error {
+	var FintoF bool
+	
 	backupLevels := make(map[level.Level]*backupitems.BackupItem)
+	log.Println("backupLevels ",backupLevels)
 	all, err := dbase.FetchBackupItems()
 	if err != nil {
 		return err
 	}
-	if all != nil {
+	
+	if all != nil {				
 		all = all[len(all)-1].ChainWithAllParents()
+		log.Println("FintoF start",FintoF)
+		FintoF,err =firebird.LastLastChainIntoFirebird(all)
+		log.Println("firebird.LastLastChainIntoFirebird(all)",FintoF)
+		if err != nil {
+		   return err
+	     }
 		for _, b := range all {
 			backupLevels[b.Level] = b
 		}
 	}
+	log.Println("firebird.LastLastChainIntoFirebird(all)2",FintoF)
 	// for each level
+	
 	levelFirst := config.Current().LevelsConfig.First().Level
 	maxLevel := *config.Current().LevelsConfig.MaxLevel()
 	var parentGUID string
 	for i := levelFirst; !i.Equals(maxLevel.Next()); i = i.Next() {
 		isActual := false
 		if bkp, ok := backupLevels[i]; ok {
-			isActual, _ = config.Current().LevelsConfig.IsActual(bkp.Level, bkp.Date, time.Now())
+			isActual, err = config.Current().LevelsConfig.IsActual(bkp.Level, bkp.Date, time.Now())
+			if err != nil {
+		                  return err
+	        }
 			if isActual || (parentGUID == "" && !i.IsFirst()) {
 				parentGUID = bkp.GUID
 			}
 		}
+		log.Println("FintoF",FintoF)		
+		if !FintoF {isActual=false}
 		if !isActual {
 			doVerbose(verbose, "Start do backup level:%s\n", i)
 			if newbkp, e := bservice.Backup(verbose, i, parentGUID); e == nil {
@@ -174,6 +192,7 @@ func DoBackup(verbose bool) error {
 //DoPackItemsServ Packing All Items who are not actual
 func DoPackItemsServ(verbose bool) (err error) {
 	var arr []*backupitems.BackupItem
+	
 	if arr, err = dbase.FetchBackupItems(); err != nil {
 		return err
 	} else if arr == nil {
@@ -187,12 +206,14 @@ func DoPackItemsServ(verbose bool) (err error) {
 			continue
 		}
 		//check hash before pack
+		
 		doVerbose(verbose, "Check hash\n")
 		if ok, e := arr[i].HashValid(); !ok {
 			return e
 		}
 		swl := fileutils.Size(arr[i].FilePath())
 		doVerbose(verbose, "Pack: %s\n", arr[i].FilePath())
+		
 		if err = arr[i].PackItem(true); err != nil {
 			log.Println("Error packing:", arr[i].FilePath(), err)
 			return err

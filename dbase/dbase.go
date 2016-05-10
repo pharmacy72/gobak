@@ -2,9 +2,9 @@ package dbase
 
 import (
 	"database/sql"
-	"gobak/backupitems"
-	"gobak/config"
-	"gobak/level"
+	"github.com/pharmacy72/gobak/backupitems"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/level"
 	"log"
 	"os"
 	"path/filepath"

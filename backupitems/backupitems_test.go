@@ -1,7 +1,7 @@
 package backupitems
 
 import (
-	"gobak/level"
+	"github.com/pharmacy72/gobak/level"
 	"path/filepath"
 	"testing"
 )
