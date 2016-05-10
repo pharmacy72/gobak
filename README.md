@@ -44,6 +44,8 @@ gobak (Go utility for nbackup firebird)
 ## Install
 go get github.com/pharmacy72/gobak
 
+## Usage
+
 ## License
 MIT:
 
