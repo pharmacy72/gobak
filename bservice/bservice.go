@@ -2,22 +2,22 @@ package bservice
 
 import (
 	"errors"
-	"github.com/pharmacy72/gobak/backupitems"
-	"github.com/pharmacy72/gobak/config"
-	"github.com/pharmacy72/gobak/dbase"
-	"github.com/pharmacy72/gobak/fileutils"
-	"github.com/pharmacy72/gobak/level"
+	"fmt"
 	"log"
 	"os"
-	"github.com/beevik/guid"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-	"fmt"
+
+	"github.com/beevik/guid"
+	"github.com/pharmacy72/gobak/backupitems"
 	"github.com/pharmacy72/gobak/command"
+	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/dbfile"
-	"strconv"
 	"github.com/pharmacy72/gobak/errout"
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/level"
 )
 
 // Errors
@@ -34,11 +34,9 @@ func doVerbose(verbose bool, a ...interface{}) {
 	}
 }
 
-
 func wrapCmd2ErrOut(c *command.Command, reportIfError bool) *errout.ErrOut {
 	return errout.New(c.Error, reportIfError, c.Stdout.Buffer, c.Stderr.Buffer)
 }
-
 
 //Backup make backup file for level
 func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.BackupItem, err error) {
@@ -48,7 +46,7 @@ func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.Ba
 	res.Date = time.Now().Local()
 	res.FileName = res.Date.Format("2006-01-02_15_04") + "level_" + strconv.Itoa(lev.Int()) + ".nbk"
 	res.Level = lev
-	
+
 	var args []string
 	if config.Current().DirectIO {
 		args = append(args, "-D", "ON")
@@ -60,7 +58,7 @@ func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.Ba
 	cmd := command.Exec(verbose, config.Current().PathToNbackup, args[:]...)
 	if cmd.Error != nil {
 		//log.Print(cmd.Error)
-		return nil, wrapCmd2ErrOut(cmd,true)
+		return nil, wrapCmd2ErrOut(cmd, true)
 	}
 
 	if err := res.ComputeHash(); err != nil {
@@ -135,7 +133,10 @@ func Restore(dest string, elem *backupitems.BackupItem, hash bool, verbose bool)
 
 //RestoreFromFile Restore backup into dest from filename,optional with to checking hash
 func RestoreFromFile(filename string, dest string, hash bool, verbose bool) error {
-	arr, err := dbase.FetchBackupItems()
+	repo := backupitems.GetRepository()
+	defer repo.Close()
+	backups := repo.All()
+	arr, err := backups.Get()
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,10 @@ func RestoreFromFile(filename string, dest string, hash bool, verbose bool) erro
 
 //RestoreFromID Restore backup into dest by ID,optional with to checking hash
 func RestoreFromID(id int, dest string, hash bool, verbose bool) error {
-	arr, err := dbase.FetchBackupItems()
+	repo := backupitems.GetRepository()
+	defer repo.Close()
+	backups := repo.All()
+	arr, err := backups.Get()
 	if err != nil {
 		return err
 	}
@@ -163,6 +167,7 @@ func RestoreFromID(id int, dest string, hash bool, verbose bool) error {
 		return nil
 	}
 	for _, item := range arr {
+		//TODO: get collection by filter
 		if item.ID == id {
 			if _, err := Restore(dest, item, hash, verbose); err != nil {
 				return err
