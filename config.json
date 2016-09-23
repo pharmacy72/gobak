@@ -1,16 +1,16 @@
 {
   "PathToNbackup": "C:\\Program Files\\Firebird\\Firebird_2_5\\bin\\nbackup.exe",
   "DirectIO":true,
-  "PathToBackupFolder": "H:\\133\\",
-  "AliasDb": "E:\\po\\DB1173.01\\TEST_RC.FDB",
+  "PathToBackupFolder": "C:\\test\\",
+  "AliasDb": "TEST.FDB",
   "User": "sysdba",
   "Password": "masterkey",
-  "Physicalpathdb": "E:\\po\\DB1173.01\\TEST_RC.FDB",
-  "EmailFrom": "formeo@pharm-tmn.ru",
-  "EmailTo": "formeo@pharm-tmn.ru",
-  "SmtpServer": "192.168.146.3:25",
+  "Physicalpathdb": "TEST.FDB",
+  "EmailFrom": "test@test.com",
+  "EmailTo": "test@test.com",
+  "SmtpServer": "127.0.0.1:25",
   "Pathtogfix": "C:\\Program Files\\Firebird\\Firebird_2_5\\bin\\gfix.exe",
-  "NameBase": "TESTDB",
+  "NameBase": "TEST",
   "TimeMlsc": 6000,
   "levels":[
     {
