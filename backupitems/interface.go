@@ -20,5 +20,4 @@ type Collection interface {
 	Get() ([]*BackupItem, error)
 	AddFilterID(ids ...string) Collection
 	ClearFilters()
-	//Todo: filters
 }
