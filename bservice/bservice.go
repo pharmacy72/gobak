@@ -159,21 +159,19 @@ func RestoreFromID(id int, dest string, hash bool, verbose bool) error {
 	repo := backupitems.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
+	backups.AddFilterID(strconv.Itoa(id))
 	arr, err := backups.Get()
 	if err != nil {
 		return err
 	}
 	if arr == nil {
-		return nil
+		return ErrIDSourceNotFound
 	}
 	for _, item := range arr {
-		//TODO: get collection by filter
-		if item.ID == id {
-			if _, err := Restore(dest, item, hash, verbose); err != nil {
-				return err
-			}
-			return nil
+		if _, err := Restore(dest, item, hash, verbose); err != nil {
+			return err
 		}
+		return nil
 	}
 	return ErrIDSourceNotFound
 }

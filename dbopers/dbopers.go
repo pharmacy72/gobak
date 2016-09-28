@@ -12,7 +12,6 @@ import (
 	"github.com/pharmacy72/gobak/backupitems"
 	"github.com/pharmacy72/gobak/bservice"
 	"github.com/pharmacy72/gobak/config"
-	"github.com/pharmacy72/gobak/dbase"
 	"github.com/pharmacy72/gobak/dbfile"
 	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/firebird"
@@ -189,8 +188,14 @@ func DoBackup(verbose bool) error {
 	//Save into repository
 	for i := levelFirst; !i.Equals(maxLevel.Next()); i = i.Next() {
 		item, _ := backupLevels[i]
-		if e := dbase.WriteBackupItem(item); e != nil {
-			return e
+		if item.Insert {
+			if e := repo.Append(item); e != nil {
+				return e
+			}
+		} else if item.Modified {
+			if e := repo.Update(item); e != nil {
+				return e
+			}
 		}
 	}
 	return nil
@@ -234,9 +239,21 @@ func DoPackItemsServ(verbose bool) (err error) {
 		}
 		count++
 	}
-	if err = dbase.WriteBackupItems(arr); err != nil {
-		return err
+
+	for _, item := range arr {
+		var err error
+		if item.Insert {
+			err = repo.Append(item)
+		} else if item.Modified {
+			err = repo.Update(item)
+		}
+		if err != nil {
+			return err
+		}
 	}
+	/*if err = dbase.WriteBackupItems(arr); err != nil {
+		return err
+	}*/
 	doVerbose(verbose, "Packed files: %d, released space: %s \n", count, fileutils.SizeToFredly(sizewas-sizenow))
 	return nil
 }
@@ -495,48 +512,47 @@ func DoStat(hashcheck bool) error {
 }
 
 //DoStatBackup print a statistic with information about a backup
-func DoStatBackup(id string) error {
+func DoStatBackup(id ...string) error {
 	repo := backupitems.GetRepository()
 	defer repo.Close()
-	backups, err := repo.All().Get()
+	col := repo.All()
+	col.AddFilterID(id...)
+	backups, err := col.Get()
 	if err != nil {
 		return err
 	}
-	nid, err := strconv.Atoi(id)
-	if err != nil {
-		return err
-	}
-	item := backupitems.FindByID(nid, backups)
-	if item == nil {
+	if len(backups) == 0 {
 		return bservice.ErrIDSourceNotFound
 	}
 	bstr := map[bool]string{
 		false: "No",
 		true:  "Yes",
 	}
-	fmt.Println("Backup information:")
-	fmt.Println("\tID:", item.ID)
-	fmt.Println("\tLevel:", item.Level)
-	fmt.Println("\tDate:", item.Date.Format("2006-01-02 15:04:01"))
-	fmt.Println("\tHash:", item.Hash)
-	fmt.Println("\tGUID:", item.GUID)
-	fmt.Println("\tParent guid:", item.GUIDParent)
-	if item.Parent != nil {
-		fmt.Println("\tParent:", item.Parent.ID)
-	} else {
-		fmt.Println("\tParent: <nil>")
-	}
-	fmt.Println("\tName:", item.FileName)
-	fmt.Println("\tPath:", item.FilePath())
-	fmt.Println("\tPacked:", bstr[item.IsArchived()])
-	if item.Exists() {
-		fmt.Println("\tExists file: Yes")
-		valid, _ := item.HashValid()
-		fmt.Println("\tCorrupt file:", bstr[!valid])
-		fmt.Println("\tSize:", fileutils.SizeToFredly(fileutils.Size(item.FilePath())))
+	for _, item := range backups {
+		fmt.Println("---- Backup information: ----")
+		fmt.Println("\tID:", item.ID)
+		fmt.Println("\tLevel:", item.Level)
+		fmt.Println("\tDate:", item.Date.Format("2006-01-02 15:04:01"))
+		fmt.Println("\tHash:", item.Hash)
+		fmt.Println("\tGUID:", item.GUID)
+		fmt.Println("\tParent guid:", item.GUIDParent)
+		if item.Parent != nil {
+			fmt.Println("\tParent:", item.Parent.ID)
+		} else {
+			fmt.Println("\tParent: <nil>")
+		}
+		fmt.Println("\tName:", item.FileName)
+		fmt.Println("\tPath:", item.FilePath())
+		fmt.Println("\tPacked:", bstr[item.IsArchived()])
+		if item.Exists() {
+			fmt.Println("\tExists file: Yes")
+			valid, _ := item.HashValid()
+			fmt.Println("\tCorrupt file:", bstr[!valid])
+			fmt.Println("\tSize:", fileutils.SizeToFredly(fileutils.Size(item.FilePath())))
 
-	} else {
-		fmt.Println("\tExists file: No")
+		} else {
+			fmt.Println("\tExists file: No")
+		}
 	}
 	return nil
 }
