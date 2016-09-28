@@ -35,13 +35,13 @@ func CheckMd5(pFile, bMd5 string) (res bool, err error) {
 	var dst string
 	hash, err := ComputeMd5(pFile)
 	if err != nil {
-		log.Println("file:", pFile, "dst:", dst, "curhash:", bMd5)
+		//log.Println("file:", pFile, "dst:", dst, "curhash:", bMd5)
 		return false, err
 	}
 	dst = hex.EncodeToString(hash[:])
 
 	if dst != bMd5 {
-		log.Println("file:", pFile, "dst:", dst, "curhash:", bMd5)
+		//log.Println("file:", pFile, "dst:", dst, "curhash:", bMd5)
 		err := errors.New("Check md5 is failed. File is corrupt")
 		return false, err
 	}

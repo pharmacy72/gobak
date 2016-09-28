@@ -9,6 +9,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
+	"github.com/codegangsta/cli"
+	"github.com/kardianos/service"
 	"github.com/pharmacy72/gobak/bservice"
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/dbopers"
@@ -16,12 +23,6 @@ import (
 	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/smail"
 	"github.com/pharmacy72/gobak/svc"
-	"log"
-	"os"
-	"strconv"
-	"time"
-	"github.com/codegangsta/cli"
-	"github.com/kardianos/service"
 )
 
 const version = "0.3 beta"
@@ -102,7 +103,6 @@ func (a *application) DefaultAction() *application {
 			a.logerror(c.App.Command("help").Run(c))
 			os.Exit(1)
 		}
-
 
 		log.Printf("!!!!!!!!!!!!1")
 		if c.Args().Present() {
@@ -238,7 +238,7 @@ func (a *application) repolist(c *cli.Context) {
 
 func (a *application) repostat(c *cli.Context) {
 	if c.IsSet("id") {
-		if err := dbopers.DoStatBackup(c.String("id")); err != nil {
+		if err := dbopers.DoStatBackup(c.StringSlice("id")[:]...); err != nil {
 			panic(err)
 		}
 	} else if err := dbopers.DoStat(c.Bool("hash")); err != nil {
@@ -248,7 +248,7 @@ func (a *application) repostat(c *cli.Context) {
 
 func (a *application) repopack(c *cli.Context) {
 	if err := dbopers.DoPackItemsServ(a.Verbose); err != nil {
-		
+
 		smail.MailSend("Zipping err "+err.Error(), "Zipping err", "", "")
 		panic(err)
 	} else {
@@ -362,9 +362,9 @@ func (a *application) DefineCommands() *application {
 							Name:  "hash",
 							Usage: "Check hash of file",
 						},
-						cli.StringFlag{
+						cli.StringSliceFlag{
 							Name:  "id",
-							Usage: "id backup.View information about a backup",
+							Usage: "id(s) backup.View information about a backup",
 						},
 					},
 					Action: a.repostat,
@@ -421,7 +421,7 @@ func internalRun() error {
 		if err != nil {
 			log.Println("Backup error: ", err)
 			if eo, ok := err.(*errout.ErrOut); ok {
-			   	log.Println(eo.StdErrOutput())
+				log.Println(eo.StdErrOutput())
 				//log.Println(eo.StdOutput())
 			}
 			if !errOut2mail(err) {
