@@ -1,4 +1,5 @@
-
+0.4
+    [+] send telemetry in Redis storage
 0.3
     [+] db check -noclear|-n option
     [+] db backup start/end

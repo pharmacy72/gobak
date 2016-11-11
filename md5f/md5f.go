@@ -9,6 +9,9 @@ import (
 	"os"
 )
 
+var (
+	ErrFileCorrupt  = errors.New("Check md5 is failed. File is corrupt")
+)
 //ComputeMd5 Md5 Calculates and returns a array of byte
 func ComputeMd5(filePath string) ([]byte, error) {
 	var result []byte
@@ -42,7 +45,7 @@ func CheckMd5(pFile, bMd5 string) (res bool, err error) {
 
 	if dst != bMd5 {
 		//log.Println("file:", pFile, "dst:", dst, "curhash:", bMd5)
-		err := errors.New("Check md5 is failed. File is corrupt")
+		err := ErrFileCorrupt
 		return false, err
 	}
 	return true, nil

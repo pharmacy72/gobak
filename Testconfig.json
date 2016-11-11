@@ -12,6 +12,18 @@
   "Pathtogfix": "C:\\Program Files\\Firebird\\Firebird_2_5\\bin\\gfix.exe",
   "NameBase": "TEST",
   "TimeMlsc": 6000,
+
+  "redis" : {
+    "enabled": true,
+    "address":"localhost:6379",
+    "password":"",
+    "db":0,
+    "queue": 1000,
+    "timeout": 1000,
+    "periodstats": "1h"
+
+  },
+
   "levels":[
     {
       "level":0,

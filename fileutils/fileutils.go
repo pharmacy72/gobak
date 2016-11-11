@@ -66,11 +66,13 @@ func Exists(path string) bool {
 func MakeDirsLevels(basedir string, maxlevel int) {
 	for i := 0; i <= maxlevel; i++ {
 		dirlevel := filepath.Join(basedir, strconv.Itoa(i))
-		if f, err := os.Stat(dirlevel); os.IsNotExist(err) || !f.IsDir() {
+		if f, err := os.Stat(dirlevel); os.IsNotExist(err) || f==nil || !f.IsDir() {
 			err := os.Mkdir(dirlevel, 0777)
 			if err != nil {
 				panic(err)
 			}
+		} else if err!=nil {
+			panic(err)
 		}
 	}
 }

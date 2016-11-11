@@ -3,9 +3,6 @@ package main
 // 31.08.2015 created by Formeo
 
 //TODO: Logger
-//TODO: repository fix -> SQL1,SQL2... etc
-//TODO: gbak backup/restore?
-
 import (
 	"errors"
 	"fmt"
@@ -22,12 +19,14 @@ import (
 	"github.com/pharmacy72/gobak/errout"
 	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/smail"
+	"github.com/pharmacy72/gobak/snap"
 	"github.com/pharmacy72/gobak/svc"
+	"bytes"
 )
 
-const version = "0.3 beta"
+const version = "0.4"
 const nameApp = "GoBak"
-const copyright = "OAO Pharmacy Tyumen Russia,2015"
+const copyright = "AO Pharmacy,Tyumen, Russia, 2015-2016"
 
 type application struct {
 	cliApp  *cli.App
@@ -55,6 +54,9 @@ func (a *application) logerror(err error) {
 }
 
 func newApplication() *application {
+
+	snap.Start()
+
 	result := &application{}
 	result.cliApp = cli.NewApp()
 	result.cliApp.Name = nameApp
@@ -103,8 +105,6 @@ func (a *application) DefaultAction() *application {
 			a.logerror(c.App.Command("help").Run(c))
 			os.Exit(1)
 		}
-
-		log.Printf("!!!!!!!!!!!!1")
 		if c.Args().Present() {
 			fmt.Printf("Unknow command: %s\n", c.Args().First())
 			os.Exit(1)
@@ -241,7 +241,7 @@ func (a *application) repostat(c *cli.Context) {
 		if err := dbopers.DoStatBackup(c.StringSlice("id")[:]...); err != nil {
 			panic(err)
 		}
-	} else if err := dbopers.DoStat(c.Bool("hash")); err != nil {
+	} else if err := dbopers.DoStat(os.Stdout,c.Bool("hash"),true); err != nil {
 		panic(err)
 	}
 }
@@ -415,19 +415,39 @@ func (a *application) DefineCommands() *application {
 }
 
 func internalRun() error {
+	var statsend time.Time
+
 	for {
+		snap.Ping(config.Current().NameBase)
+		if time.Now().After(statsend.Add(config.Current().Redis.PeriodStats)) {
+			statsend = time.Now()
+			snap.Incr(config.Current().NameBase, "counters", snap.CountStats, 1)
+			var buf bytes.Buffer
+			if err := dbopers.DoStat(&buf,true,false);err!=nil {
+				log.Println(err);
+				snap.Stats(config.Current().NameBase,err.Error(),true)
+			} else {
+				snap.Stats(config.Current().NameBase,buf.String(),false)
+			}
+		}
 		time.Sleep(time.Duration(config.Current().TimeMsec) * time.Millisecond)
 		err := dbopers.DoBackup(app.Verbose)
 		if err != nil {
+			snap.Incr(config.Current().NameBase, "counters", snap.CounterErrorBackup, 1)
 			log.Println("Backup error: ", err)
 			if eo, ok := err.(*errout.ErrOut); ok {
 				log.Println(eo.StdErrOutput())
 				//log.Println(eo.StdOutput())
+				snap.BackupDone(config.Current().NameBase, "", "", eo.StdErrOutput())
+
+			} else {
+				snap.BackupDone(config.Current().NameBase, "", "", err.Error())
 			}
 			if !errOut2mail(err) {
 				smail.MailSend("Backup error:"+err.Error(), "Error backup", "", "")
 			}
 		}
+
 	}
 }
 
@@ -454,7 +474,6 @@ func main() {
 			} else if app.Verbose {
 				fmt.Fprintln(os.Stderr, e.(error))
 			}
-
 			os.Exit(1)
 		}
 	}()

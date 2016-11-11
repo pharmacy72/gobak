@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"github.com/kardianos/service"
+	"github.com/pharmacy72/gobak/snap"
+	"github.com/pharmacy72/gobak/config"
 )
 
 type program struct {
@@ -12,6 +14,7 @@ type program struct {
 }
 
 func (p *program) Start(s service.Service) error {
+	snap.Incr(config.Current().NameBase,"counters",snap.CounterStart,1)
 	if service.Interactive() {
 		log.Println("Gobak running in terminal.")
 	} else {
@@ -23,11 +26,13 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) Run() {
+
 	if e := p.internalrun(); e != nil {
 		log.Println(e)
 	}
 }
 func (p *program) Stop(s service.Service) error {
+	snap.Incr(config.Current().NameBase,"counters",snap.CounterStop,1)
 	log.Println("Gobak service Stopping!")
 	close(p.exit)
 	return nil

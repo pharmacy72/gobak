@@ -19,6 +19,12 @@ import (
 
 	"github.com/arteev/fmttab"
 	"github.com/nsf/termbox-go"
+	"github.com/pharmacy72/gobak/snap"
+
+	"github.com/pharmacy72/gobak/errout"
+	"io"
+	"bufio"
+	"github.com/pharmacy72/gobak/md5f"
 )
 
 func doVerbose(verbose bool, a ...interface{}) {
@@ -123,9 +129,8 @@ func DoCopyDataBase(dest string, ovewrite bool, verbose bool) (err error) {
 func DoBackup(verbose bool) error {
 	var FintoF bool
 	backupLevels := make(map[level.Level]*backupitems.BackupItem)
-	log.Println("backupLevels ", backupLevels)
 	repo := backupitems.GetRepository()
-	defer repo.Close()
+	//defer repo.Close()
 	backups := repo.All()
 	all, err := backups.Get()
 	if err != nil {
@@ -134,9 +139,7 @@ func DoBackup(verbose bool) error {
 
 	if all != nil {
 		all = all[len(all)-1].ChainWithAllParents()
-		log.Println("FintoF start", FintoF)
 		FintoF, err = firebird.LastLastChainIntoFirebird(all)
-		log.Println("firebird.LastLastChainIntoFirebird(all)", FintoF)
 		if err != nil {
 			return err
 		}
@@ -144,7 +147,7 @@ func DoBackup(verbose bool) error {
 			backupLevels[b.Level] = b
 		}
 	}
-	log.Println("firebird.LastLastChainIntoFirebird(all)2", FintoF)
+
 	// for each level
 
 	levelFirst := config.Current().LevelsConfig.First().Level
@@ -161,23 +164,42 @@ func DoBackup(verbose bool) error {
 				parentGUID = bkp.GUID
 			}
 		}
-		log.Println("FintoF", FintoF)
 		if !FintoF {
 			isActual = false
 		}
 		if !isActual {
 			doVerbose(verbose, "Start do backup level:%s\n", i)
+			snap.Incr(config.Current().NameBase,"counters",snap.CounterStartBackup,1)
 			if newbkp, e := bservice.Backup(verbose, i, parentGUID); e == nil {
 				doVerbose(verbose, "Successful backup %s. file %s\n", i, newbkp.FileName)
 				backupLevels[i] = newbkp
 				parentGUID = newbkp.GUID
+
+				snap.Incr(config.Current().NameBase,"counters",snap.CounterSuccessBackup,1)
+				size:=fileutils.SizeToFredly(fileutils.Size(newbkp.FilePath()))
+				snap.BackupDone(config.Current().NameBase,i.String(),size,"")
 			} else {
 				log.Printf("FAILED: %s\n", e)
 				return e
 			}
 			checkLvl, _ := config.Current().LevelsConfig.Find(i)
 			if checkLvl.Check {
+				snap.Incr(config.Current().NameBase,"counters",snap.CounterCheck,1)
 				_, e := DoCheckBase(verbose, false)
+
+				if e!=nil {
+					var errortext string
+					 if eo, ok := err.(*errout.ErrOut); ok {
+						 errortext = eo.StdErrOutput()
+					 } else {
+						 errortext = e.Error()
+					 }
+					snap.CheckDB(config.Current().NameBase, errortext,true)
+				} else {
+					snap.CheckDB(config.Current().NameBase,"OK",false)
+				}
+
+
 				if (e != nil) && (e != dbfile.ErrCheckBase) {
 					log.Print("CHECKBASE FAILED\n")
 					return e
@@ -197,6 +219,9 @@ func DoBackup(verbose bool) error {
 				return e
 			}
 		}
+
+		//snap.
+		//
 	}
 	return nil
 }
@@ -334,16 +359,18 @@ type statistic struct {
 }
 
 //DoStat print a statistic with information about backups
-func DoStat(hashcheck bool) error {
+func DoStat(w io.Writer, hashcheck bool, autosize bool) error {
+	buf := bufio.NewWriter(w)
 	repo := backupitems.GetRepository()
-	defer repo.Close()
+	//defer repo.Close()
 	backups := repo.All()
 
-	arr, err := backups.Get() //dbase.FetchBackupItems()
+	arr, err := backups.Get()
 	if err != nil {
 		return err
 	}
-	fmt.Println("Statistics repository")
+
+	buf.WriteString("Statistics repository")
 	KeysCommon := []string{"Count", "Found", "Archived", "Not Found", "Corrupt"}
 	var maxLevel level.Level
 	var AllSize int64
@@ -386,8 +413,8 @@ func DoStat(hashcheck bool) error {
 			AllSize += fileutils.Size(item.FilePath())
 			if hashcheck {
 				if ok, err := item.HashValid(); !ok {
-					if err != nil {
-						fmt.Println(err)
+					if err != nil && err!=md5f.ErrFileCorrupt {
+						buf.WriteString(err.Error())
 					} else {
 						hashCorruptItems = append(hashCorruptItems, item)
 						CommonStat["Corrupt"]++
@@ -400,31 +427,31 @@ func DoStat(hashcheck bool) error {
 		}
 	}
 
-	fmt.Println("Levels:")
+	buf.WriteString("\nLevels:")
 	for i := 0; i <= maxLevel.Int(); i++ {
 		if value, ok := levelStat[i]; ok {
-			fmt.Printf("\tLevel %d: %d, size %s,min/max/avg  %s/%s/%s\n", i, value.count,
+			buf.WriteString(fmt.Sprintf("\tLevel %d: %d, size %s,min/max/avg  %s/%s/%s\n", i, value.count,
 				fileutils.SizeToFredly(value.all),
 				fileutils.SizeToFredly(value.min),
 				fileutils.SizeToFredly(value.max),
-				fileutils.SizeToFredly(value.all/int64(value.count)))
+				fileutils.SizeToFredly(value.all/int64(value.count))))
 		}
 	}
-	fmt.Println("Statistic:")
+	buf.WriteString("Statistic:")
 	for _, key := range KeysCommon {
 		if value, ok := CommonStat[key]; ok {
-			fmt.Printf("\t%s: %d\n", key, value)
+			buf.WriteString(fmt.Sprintf("\t%s: %d\n", key, value))
 
 		}
 	}
-	fmt.Printf("\tTotal size: %s\n", fileutils.SizeToFredly(AllSize))
+	buf.WriteString(fmt.Sprintf("\tTotal size: %s\n", fileutils.SizeToFredly(AllSize)))
 	if arr != nil {
 		tab := fmttab.New("Last chain", fmttab.BorderDouble, nil)
 		tab.AddColumn("ID", 5, fmttab.AlignRight).
 			AddColumn("LV", 2, fmttab.AlignRight).
-			AddColumn("DATE", 16, fmttab.AlignLeft).
-			AddColumn("SIZE", 10, fmttab.AlignRight).
-			AddColumn("PATH", 40, fmttab.AlignLeft)
+			AddColumn("DATE", fmttab.WidthAuto, fmttab.AlignLeft).
+			AddColumn("SIZE", fmttab.WidthAuto, fmttab.AlignRight).
+			AddColumn("PATH", fmttab.WidthAuto, fmttab.AlignLeft)
 		lastCh := arr[len(arr)-1].ChainWithAllParents()
 		var totalsize int64
 		for _, j := range lastCh {
@@ -450,16 +477,26 @@ func DoStat(hashcheck bool) error {
 			"DATE": fmt.Sprintf("Total:%d", len(lastCh)),
 			"SIZE": fileutils.SizeToFredly(totalsize),
 		})
-		fmt.Printf("\nLast chain's data:\n")
-		fmt.Println(tab.String())
+
+		buf.WriteString("\nLast chain's data:\n")
+		if autosize {
+			if err := termbox.Init(); err != nil {
+				return nil
+			}
+			tw, _ := termbox.Size()
+			termbox.Close()
+			tab.AutoSize(true, tw)
+		}
+		tab.WriteTo(buf)
 
 	}
+
 	if len(notfoundItems) != 0 {
 		tab := fmttab.New("Missing backups", fmttab.BorderDouble, nil)
 		tab.AddColumn("ID", 5, fmttab.AlignRight).
 			AddColumn("LV", 2, fmttab.AlignRight).
-			AddColumn("DATE", 16, fmttab.AlignLeft).
-			AddColumn("PATH", 40, fmttab.AlignLeft)
+			AddColumn("DATE", fmttab.WidthAuto, fmttab.AlignLeft).
+			AddColumn("PATH", fmttab.WidthAuto, fmttab.AlignLeft)
 		for _, j := range notfoundItems {
 			pt, err := filepath.Rel(config.Current().PathToBackupFolder, j.FilePath())
 			if err != nil {
@@ -474,8 +511,17 @@ func DoStat(hashcheck bool) error {
 				"PATH": pt,
 			})
 		}
-		fmt.Printf("\nMissing backups:\n")
-		fmt.Println(tab.String())
+		if autosize {
+			if err := termbox.Init(); err != nil {
+				return nil
+			}
+			tw, _ := termbox.Size()
+			termbox.Close()
+			tab.AutoSize(true, tw)
+		}
+
+		tab.WriteTo(buf)
+
 	}
 	if len(hashCorruptItems) != 0 {
 		tab := fmttab.New("Corrupt files", fmttab.BorderDouble, nil)
@@ -499,16 +545,22 @@ func DoStat(hashcheck bool) error {
 				"PATH": pt,
 			})
 		}
-		fmt.Printf("\nCorrupt files:\n")
-		if err := termbox.Init(); err != nil {
-			return nil
+		if autosize {
+			if err := termbox.Init(); err != nil {
+				return nil
+			}
+
+			tw, _ := termbox.Size()
+			termbox.Close()
+			tab.AutoSize(true, tw)
 		}
-		tw, _ := termbox.Size()
-		termbox.Close()
-		tab.AutoSize(true, tw)
-		tab.WriteTo(os.Stdout)
+
+		tab.WriteTo(buf)
+
+
 	}
-	return nil
+
+	return buf.Flush()
 }
 
 //DoStatBackup print a statistic with information about a backup
