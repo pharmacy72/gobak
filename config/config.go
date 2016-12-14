@@ -149,7 +149,7 @@ func loadConfig(filename string) (result *Config, err error) {
 					return nil, err
 				}
 				result.Redis.SendStatsEnabled = true
-				fmt.Println(result.Redis.PeriodStats.String())
+				//fmt.Println(result.Redis.PeriodStats.String())
 			}
 		}
 	}
