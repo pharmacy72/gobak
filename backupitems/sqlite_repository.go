@@ -97,7 +97,15 @@ func (s *sqliteRepository) Update(item *BackupItem) error {
 }
 
 func (s *sqliteRepository) Delete(item *BackupItem) error {
-	//TODO:
+	stmt, err := s.db.Prepare("delete from  backup id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(item.ID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

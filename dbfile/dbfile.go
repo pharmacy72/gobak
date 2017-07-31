@@ -3,13 +3,16 @@ package dbfile
 import (
 	"errors"
 	"fmt"
+
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/fileutils"
 
-	"github.com/pharmacy72/gobak/command"
-	"github.com/pharmacy72/gobak/errout"
 	"os"
 	"strings"
+
+	"github.com/pharmacy72/gobak/command"
+	"github.com/pharmacy72/gobak/errout"
+	"github.com/pharmacy72/gobak/smail"
 )
 
 // Errors in the processing of a database file
@@ -139,12 +142,13 @@ func (d *DBFile) Check() error {
 
 	outCheck := cmd.Stdout.Buffer.String()
 	if cmd.Error != nil || string(outCheck) != "" {
-		//outerr:=cmd.Stderr.Buffer.String()
-		//outCheck +="\n"+outerr
-		//smail.MailSend(string(outCheck), config.Current().AliasDb+": Check base is not correct", "", "")
+		outerr := cmd.Stderr.Buffer.String()
+		outCheck += "\n" + outerr
+		smail.MailSend(string(outCheck), config.Current().AliasDb+": Check base is not correct", "", "")
 		if cmd.Error != nil {
 			return wrapCmd2ErrOut(cmd, true)
 		}
+		fmt.Println("cmd.Error", ErrCheckBase)
 		cmd.Error = ErrCheckBase
 		return wrapCmd2ErrOut(cmd, true)
 	}

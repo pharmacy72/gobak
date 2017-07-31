@@ -4,15 +4,15 @@ package main
 
 //TODO: Logger
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/codegangsta/cli"
-	"github.com/kardianos/service"
 	"github.com/pharmacy72/gobak/bservice"
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/dbopers"
@@ -21,12 +21,14 @@ import (
 	"github.com/pharmacy72/gobak/smail"
 	"github.com/pharmacy72/gobak/snap"
 	"github.com/pharmacy72/gobak/svc"
-	"bytes"
+
+	"github.com/kardianos/service"
+	"github.com/urfave/cli"
 )
 
-const version = "0.4"
+const version = "0.4.6.4"
 const nameApp = "GoBak"
-const copyright = "AO Pharmacy,Tyumen, Russia, 2015-2016"
+const copyright = "AO Pharmacy,Tyumen, Russia, 2015-2017"
 
 type application struct {
 	cliApp  *cli.App
@@ -241,7 +243,7 @@ func (a *application) repostat(c *cli.Context) {
 		if err := dbopers.DoStatBackup(c.StringSlice("id")[:]...); err != nil {
 			panic(err)
 		}
-	} else if err := dbopers.DoStat(os.Stdout,c.Bool("hash"),true); err != nil {
+	} else if err := dbopers.DoStat(os.Stdout, c.Bool("hash"), true); err != nil {
 		panic(err)
 	}
 }
@@ -423,15 +425,34 @@ func internalRun() error {
 			statsend = time.Now()
 			snap.Incr(config.Current().NameBase, "counters", snap.CountStats, 1)
 			var buf bytes.Buffer
-			if err := dbopers.DoStat(&buf,true,false);err!=nil {
-				log.Println(err);
-				snap.Stats(config.Current().NameBase,err.Error(),true)
+			if err := dbopers.DoStat(&buf, true, false); err != nil {
+				log.Println(err)
+				snap.Stats(config.Current().NameBase, err.Error(), true)
 			} else {
-				snap.Stats(config.Current().NameBase,buf.String(),false)
+				snap.Stats(config.Current().NameBase, buf.String(), false)
 			}
 		}
 		time.Sleep(time.Duration(config.Current().TimeMsec) * time.Millisecond)
-		err := dbopers.DoBackup(app.Verbose)
+		// formeo
+		//err := fileutils.DeleteFiles(config.Current().PathToBackupFolder+"/"+config.Current().LevelsConfig.MaxLevel().String(), config.Current().DeleteInt)
+		fs, err := fileutils.FreeSpace(config.Current().PathToBackupFolder)
+		if err != nil {
+
+			log.Println(err)
+
+		}
+		fmt.Println("freeSpace - ", fs/1024)
+
+		err = fileutils.DeleteFiles(filepath.Join(config.Current().PathToBackupFolder, config.Current().LevelsConfig.MaxLevel().String()), config.Current().DeleteInt)
+
+		if err != nil {
+
+			log.Println(err)
+
+		}
+
+		err = dbopers.DoBackup(app.Verbose)
+
 		if err != nil {
 			snap.Incr(config.Current().NameBase, "counters", snap.CounterErrorBackup, 1)
 			log.Println("Backup error: ", err)
@@ -443,6 +464,7 @@ func internalRun() error {
 			} else {
 				snap.BackupDone(config.Current().NameBase, "", "", err.Error())
 			}
+
 			if !errOut2mail(err) {
 				smail.MailSend("Backup error:"+err.Error(), "Error backup", "", "")
 			}

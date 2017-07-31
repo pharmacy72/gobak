@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/kardianos/service"
-	"github.com/pharmacy72/gobak/snap"
 	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/snap"
 )
 
 type program struct {
@@ -14,11 +14,11 @@ type program struct {
 }
 
 func (p *program) Start(s service.Service) error {
-	snap.Incr(config.Current().NameBase,"counters",snap.CounterStart,1)
+	snap.Incr(config.Current().NameBase, "counters", snap.CounterStart, 1)
 	if service.Interactive() {
-		log.Println("Gobak running in terminal.")
+		log.Println("Gobak is running in terminal.")
 	} else {
-		log.Println("Gobak running under service manager.")
+		log.Println("Gobak is running under service manager.")
 	}
 	p.exit = make(chan struct{})
 	go p.Run()
@@ -32,8 +32,8 @@ func (p *program) Run() {
 	}
 }
 func (p *program) Stop(s service.Service) error {
-	snap.Incr(config.Current().NameBase,"counters",snap.CounterStop,1)
-	log.Println("Gobak service Stopping!")
+	snap.Incr(config.Current().NameBase, "counters", snap.CounterStop, 1)
+	log.Println("Gobak service is stopping!")
 	close(p.exit)
 	return nil
 }

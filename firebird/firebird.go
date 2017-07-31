@@ -4,13 +4,13 @@ package firebird
 
 import (
 	"database/sql"
-	_ "fmt"
 
 	_ "github.com/nakagami/firebirdsql"
 	"github.com/pharmacy72/gobak/backupitems"
 	"github.com/pharmacy72/gobak/config"
 )
 
+//check existing last chain in backup_history
 func LastLastChainIntoFirebird(c []*backupitems.BackupItem) (bool, error) {
 	var n int
 	conn, err := sql.Open("firebirdsql", config.Current().User+":"+config.Current().Password+"@127.0.0.1/"+config.Current().Physicalpathdb)
@@ -35,11 +35,13 @@ func LastLastChainIntoFirebird(c []*backupitems.BackupItem) (bool, error) {
 			if err := row.Scan(&n); err != nil {
 				return false, err
 			}
-			if n == 0 {
-				return false, nil
+
+			if n == 1 {
+				return true, nil
 			}
 		}
 
 	}
-	return true, nil
+
+	return false, nil
 }
