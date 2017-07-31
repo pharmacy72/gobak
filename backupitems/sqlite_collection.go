@@ -1,16 +1,12 @@
 package backupitems
 
 import (
-	"path/filepath"
-	"time"
-
-	"sync"
-
-	"database/sql"
-
 	"bytes"
-
+	"database/sql"
+	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/level"

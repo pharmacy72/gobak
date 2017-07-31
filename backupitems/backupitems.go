@@ -1,12 +1,11 @@
 package backupitems
 
 import (
-
-	//"github.com/jinzhu/now"
-	"github.com/pharmacy72/gobak/level"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/pharmacy72/gobak/level"
 )
 
 //A StatusBackup type options for the items of backup

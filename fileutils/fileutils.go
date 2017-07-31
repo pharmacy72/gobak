@@ -2,10 +2,13 @@ package fileutils
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 //Errors when working with the files
@@ -66,12 +69,12 @@ func Exists(path string) bool {
 func MakeDirsLevels(basedir string, maxlevel int) {
 	for i := 0; i <= maxlevel; i++ {
 		dirlevel := filepath.Join(basedir, strconv.Itoa(i))
-		if f, err := os.Stat(dirlevel); os.IsNotExist(err) || f==nil || !f.IsDir() {
+		if f, err := os.Stat(dirlevel); os.IsNotExist(err) || f == nil || !f.IsDir() {
 			err := os.Mkdir(dirlevel, 0777)
 			if err != nil {
 				panic(err)
 			}
-		} else if err!=nil {
+		} else if err != nil {
 			panic(err)
 		}
 	}
@@ -84,6 +87,34 @@ func Size(path string) int64 {
 		return 0
 	}
 	return f.Size()
+}
+
+// delete file
+func deleteFile(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteFiles(dir string, interval int) error { // dir is the parent directory you what to search
+	fmt.Println("delete folder", dir)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		modTime := file.ModTime()
+
+		if !modTime.After(time.Now().AddDate(0, 0, -interval)) {
+			fmt.Println("filepath", filepath.Join(dir, file.Name()))
+			deleteFile(filepath.Join(dir, file.Name()))
+		}
+
+	}
+	return nil
 }
 
 //SizeToFredly returns length in human format for regular file

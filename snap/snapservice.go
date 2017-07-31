@@ -24,7 +24,7 @@ var (
 
 	clientRedis *redis.Client
 
-	Timeout    = time.Second * 1 // Таймаут проверки очереди
+	Timeout    = time.Second * 1 // Timeout queue check
 	CountQueue = 100
 )
 

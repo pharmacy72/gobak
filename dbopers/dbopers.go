@@ -1,5 +1,17 @@
 package dbopers
 
+/*
+package for opers with Database
+do
+DoCheckBase
+DoEndBackup
+DoCopyDataBase
+DoBackup  main function
+DoPackItemsServ
+DoList
+DoStat
+DoStatBackup
+*/
 import (
 	"fmt"
 	"log"
@@ -21,9 +33,10 @@ import (
 	"github.com/nsf/termbox-go"
 	"github.com/pharmacy72/gobak/snap"
 
-	"github.com/pharmacy72/gobak/errout"
-	"io"
 	"bufio"
+	"io"
+
+	"github.com/pharmacy72/gobak/errout"
 	"github.com/pharmacy72/gobak/md5f"
 )
 
@@ -139,13 +152,16 @@ func DoBackup(verbose bool) error {
 
 	if all != nil {
 		all = all[len(all)-1].ChainWithAllParents()
+		// check empty backup_history
 		FintoF, err = firebird.LastLastChainIntoFirebird(all)
 		if err != nil {
 			return err
 		}
+
 		for _, b := range all {
 			backupLevels[b.Level] = b
 		}
+
 	}
 
 	// for each level
@@ -169,36 +185,35 @@ func DoBackup(verbose bool) error {
 		}
 		if !isActual {
 			doVerbose(verbose, "Start do backup level:%s\n", i)
-			snap.Incr(config.Current().NameBase,"counters",snap.CounterStartBackup,1)
+			snap.Incr(config.Current().NameBase, "counters", snap.CounterStartBackup, 1)
 			if newbkp, e := bservice.Backup(verbose, i, parentGUID); e == nil {
 				doVerbose(verbose, "Successful backup %s. file %s\n", i, newbkp.FileName)
 				backupLevels[i] = newbkp
 				parentGUID = newbkp.GUID
 
-				snap.Incr(config.Current().NameBase,"counters",snap.CounterSuccessBackup,1)
-				size:=fileutils.SizeToFredly(fileutils.Size(newbkp.FilePath()))
-				snap.BackupDone(config.Current().NameBase,i.String(),size,"")
+				snap.Incr(config.Current().NameBase, "counters", snap.CounterSuccessBackup, 1)
+				size := fileutils.SizeToFredly(fileutils.Size(newbkp.FilePath()))
+				snap.BackupDone(config.Current().NameBase, i.String(), size, "")
 			} else {
 				log.Printf("FAILED: %s\n", e)
 				return e
 			}
 			checkLvl, _ := config.Current().LevelsConfig.Find(i)
 			if checkLvl.Check {
-				snap.Incr(config.Current().NameBase,"counters",snap.CounterCheck,1)
+				snap.Incr(config.Current().NameBase, "counters", snap.CounterCheck, 1)
 				_, e := DoCheckBase(verbose, false)
 
-				if e!=nil {
+				if e != nil {
 					var errortext string
-					 if eo, ok := err.(*errout.ErrOut); ok {
-						 errortext = eo.StdErrOutput()
-					 } else {
-						 errortext = e.Error()
-					 }
-					snap.CheckDB(config.Current().NameBase, errortext,true)
+					if eo, ok := err.(*errout.ErrOut); ok {
+						errortext = eo.StdErrOutput()
+					} else {
+						errortext = e.Error()
+					}
+					snap.CheckDB(config.Current().NameBase, errortext, true)
 				} else {
-					snap.CheckDB(config.Current().NameBase,"OK",false)
+					snap.CheckDB(config.Current().NameBase, "OK", false)
 				}
-
 
 				if (e != nil) && (e != dbfile.ErrCheckBase) {
 					log.Print("CHECKBASE FAILED\n")
@@ -413,7 +428,7 @@ func DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 			AllSize += fileutils.Size(item.FilePath())
 			if hashcheck {
 				if ok, err := item.HashValid(); !ok {
-					if err != nil && err!=md5f.ErrFileCorrupt {
+					if err != nil && err != md5f.ErrFileCorrupt {
 						buf.WriteString(err.Error())
 					} else {
 						hashCorruptItems = append(hashCorruptItems, item)
@@ -556,7 +571,6 @@ func DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 		}
 
 		tab.WriteTo(buf)
-
 
 	}
 

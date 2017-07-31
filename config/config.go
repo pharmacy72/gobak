@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pharmacy72/gobak/fileutils"
-	"github.com/pharmacy72/gobak/level"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/pharmacy72/gobak/fileutils"
+	"github.com/pharmacy72/gobak/level"
 )
 
 //Errors in the configuration file
@@ -51,6 +52,7 @@ type Config struct {
 	Pathtogfix         string      `json:"Pathtogfix"`
 	Physicalpathdb     string      `json:"Physicalpathdb"`
 	NameBase           string      `json:"NameBase"`
+	DeleteInt          int         `json:"DeleteInt"`
 	TimeMsec           int         `json:"TimeMlsc"`
 	Redis              redisconfig `json:"redis"`
 	Levels             []struct {
@@ -116,6 +118,7 @@ func loadConfig(filename string) (result *Config, err error) {
 	result.SMTPServer = nvl(res["SmtpServer"], "").(string)
 	result.Pathtogfix = nvl(res["Pathtogfix"], "").(string)
 	result.NameBase = nvl(res["NameBase"], "").(string)
+	result.DeleteInt = int(nvl(res["DeleteInt"], 90).(float64))
 	result.TimeMsec = int(nvl(res["TimeMlsc"], 10000).(float64))
 	result.DirectIO = nvl(res["DirectIO"], false).(bool)
 	result.LevelsConfig = level.NewList()
@@ -144,7 +147,7 @@ func loadConfig(filename string) (result *Config, err error) {
 			result.Redis.Queue = int(nvl(m["queue"], 100).(float64))
 			result.Redis.Timeout = int(nvl(m["timeout"], 1000).(float64))
 			if v, ok := m["periodstats"]; ok {
-				result.Redis.PeriodStats , err = time.ParseDuration(nvl(v, "24h").(string))
+				result.Redis.PeriodStats, err = time.ParseDuration(nvl(v, "24h").(string))
 				if err != nil {
 					return nil, err
 				}

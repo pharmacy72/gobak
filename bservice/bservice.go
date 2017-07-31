@@ -1,5 +1,12 @@
 package bservice
 
+/*
+do
+  Backup
+  Restore
+  RestoreFromFile
+  RestoreFromID
+*/
 import (
 	"errors"
 	"fmt"
@@ -40,6 +47,7 @@ func wrapCmd2ErrOut(c *command.Command, reportIfError bool) *errout.ErrOut {
 
 //Backup make backup file for level
 func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.BackupItem, err error) {
+
 	res = backupitems.New(config.Current().PathToBackupFolder)
 	res.GUID = guid.New().String()
 	res.GUIDParent = guidPrev
@@ -57,7 +65,6 @@ func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.Ba
 	log.Println("CMD:", args)
 	cmd := command.Exec(verbose, config.Current().PathToNbackup, args[:]...)
 	if cmd.Error != nil {
-		//log.Print(cmd.Error)
 		return nil, wrapCmd2ErrOut(cmd, true)
 	}
 
