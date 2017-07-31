@@ -434,6 +434,7 @@ func internalRun() error {
 		}
 		time.Sleep(time.Duration(config.Current().TimeMsec) * time.Millisecond)
 		// formeo
+
 		//err := fileutils.DeleteFiles(config.Current().PathToBackupFolder+"/"+config.Current().LevelsConfig.MaxLevel().String(), config.Current().DeleteInt)
 		fs, err := fileutils.FreeSpace(config.Current().PathToBackupFolder)
 		if err != nil {
