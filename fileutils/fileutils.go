@@ -123,7 +123,10 @@ func DeleteFiles(dir string, interval int) error { // dir is the parent director
 
 		if !modTime.After(time.Now().AddDate(0, 0, -interval)) {
 			fmt.Println("filepath", filepath.Join(dir, file.Name()))
-			deleteFile(filepath.Join(dir, file.Name()))
+			err = deleteFile(filepath.Join(dir, file.Name()))
+			if err != nil {
+				return err
+			}
 
 		}
 

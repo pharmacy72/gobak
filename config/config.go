@@ -14,6 +14,7 @@ import (
 	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/level"
 )
+const EnvPrefix = "GOBAK"
 
 //Errors in the configuration file
 var (
