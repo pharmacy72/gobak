@@ -29,7 +29,7 @@ import (
 
 // Errors
 var (
-	ErrFileDestAlreadyExists = errors.New("Distination file already exists")
+	ErrFileDestAlreadyExists = errors.New("Destination file already exists")
 	ErrFileSourceNotFound    = errors.New("Backup by filename not found")
 	ErrIDSourceNotFound      = errors.New("Backup by identifier not found")
 	ErrFileCorrupt           = errors.New("The backup file is corrupt")
