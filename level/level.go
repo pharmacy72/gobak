@@ -7,7 +7,7 @@ import (
 
 //Errors for levels
 var (
-	ErrLevelIsTopNotPrev = errors.New("Level: level is top and not exists prev")
+	ErrLevelIsTopNotPrev = errors.New("level: level is top and not exists prev")
 )
 
 //A Level of a backup

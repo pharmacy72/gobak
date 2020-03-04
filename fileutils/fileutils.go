@@ -1,8 +1,8 @@
 package fileutils
 
 import (
-	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,14 +12,18 @@ import (
 	"time"
 )
 
-//Errors when working with the files
-var (
-	ErrFileAlreadyExists = errors.New("file destination already exists")
-	ErrFileDestIsDir     = errors.New("destination is directory")
-)
+type FileUtils struct {
+	log *zap.Logger
+}
+
+func NewFileUtils(log *zap.Logger) *FileUtils {
+	return &FileUtils{
+		log: log,
+	}
+}
 
 // free space on directory
-func FreeSpace(path string) (uint64, error) {
+func (c *FileUtils) FreeSpace(path string) (uint64, error) {
 	fs := syscall.Statfs_t{}
 
 	err := syscall.Statfs(path, &fs)
@@ -31,7 +35,7 @@ func FreeSpace(path string) (uint64, error) {
 }
 
 //FileCopy Copy source file to dest with option overwrite
-func FileCopy(source, dest string, overwrite bool) (bool, error) {
+func (c *FileUtils) FileCopy(source, dest string, overwrite bool) (bool, error) {
 	in, err := os.Open(source)
 	defer in.Close()
 	if err != nil {
@@ -52,10 +56,10 @@ func FileCopy(source, dest string, overwrite bool) (bool, error) {
 		}
 	}
 
-	out, eout := os.Create(dest)
+	out, eOut := os.Create(dest)
 	defer out.Close()
-	if eout != nil {
-		return false, eout
+	if eOut != nil {
+		return false, eOut
 	}
 	if _, err = io.Copy(out, in); err != nil {
 		return false, err
@@ -67,7 +71,7 @@ func FileCopy(source, dest string, overwrite bool) (bool, error) {
 }
 
 //Exists check exists file for filepath
-func Exists(path string) bool {
+func (c *FileUtils) Exists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true
@@ -79,11 +83,11 @@ func Exists(path string) bool {
 }
 
 //MakeDirsLevels Make subdirs for each level
-func MakeDirsLevels(basedir string, maxlevel int) {
+func (c *FileUtils) MakeDirsLevels(basedir string, maxlevel int) {
 	for i := 0; i <= maxlevel; i++ {
-		dirlevel := filepath.Join(basedir, strconv.Itoa(i))
-		if f, err := os.Stat(dirlevel); os.IsNotExist(err) || f == nil || !f.IsDir() {
-			err := os.Mkdir(dirlevel, 0777)
+		dirLevel := filepath.Join(basedir, strconv.Itoa(i))
+		if f, err := os.Stat(dirLevel); os.IsNotExist(err) || f == nil || !f.IsDir() {
+			err := os.Mkdir(dirLevel, 0777)
 			if err != nil {
 				panic(err)
 			}
@@ -94,7 +98,7 @@ func MakeDirsLevels(basedir string, maxlevel int) {
 }
 
 //Size returns length in bytes for regular file
-func Size(path string) int64 {
+func (c *FileUtils) Size(path string) int64 {
 	f, err := os.Stat(path)
 	if err != nil {
 		return 0
@@ -103,7 +107,7 @@ func Size(path string) int64 {
 }
 
 // delete file
-func deleteFile(path string) error {
+func (c *FileUtils) deleteFile(path string) error {
 	err := os.Remove(path)
 	if err != nil {
 		return err
@@ -111,8 +115,8 @@ func deleteFile(path string) error {
 	return nil
 }
 
-func DeleteFiles(dir string, interval int) error { // dir is the parent directory you what to search
-	fmt.Println("delete folder", dir)
+func (c *FileUtils) DeleteFiles(dir string, interval int) error { // dir is the parent directory you what to search
+	c.log.Info(fmt.Sprintf("delete folder %v", dir))
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -122,8 +126,8 @@ func DeleteFiles(dir string, interval int) error { // dir is the parent director
 		modTime := file.ModTime()
 
 		if !modTime.After(time.Now().AddDate(0, 0, -interval)) {
-			fmt.Println("filepath", filepath.Join(dir, file.Name()))
-			err = deleteFile(filepath.Join(dir, file.Name()))
+			c.log.Info(fmt.Sprintf("filepath %v", filepath.Join(dir, file.Name())))
+			err = c.deleteFile(filepath.Join(dir, file.Name()))
 			if err != nil {
 				return err
 			}
@@ -135,7 +139,7 @@ func DeleteFiles(dir string, interval int) error { // dir is the parent director
 }
 
 //SizeToFredly returns length in human format for regular file
-func SizeToFredly(s int64) string {
+func (c *FileUtils) SizeToFriendly(s int64) string {
 	if s < 1024 {
 		return strconv.FormatInt(s, 10) + " bytes"
 	}
@@ -152,7 +156,7 @@ func SizeToFredly(s int64) string {
 }
 
 //GetTempFile generate a file name with a check for existing
-func GetTempFile(dir, filename string) string {
+func (c *FileUtils) GetTempFile(dir, filename string) string {
 	path := filepath.Join(dir, filename)
 	for i := 0; ; i++ {
 		_, e := os.Stat(path)

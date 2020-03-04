@@ -53,26 +53,20 @@ func (c *MailApp) MailSend(textMail, subjectMail, fileLocationText, fileNameText
 	lineMaxLength := 500
 	nbrLines := len(encoded) / lineMaxLength
 
-	//append lines to buffer
 	for i := 0; i < nbrLines; i++ {
 		if _, e := buf.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n"); e != nil {
 			log.Println(e)
 		}
-	} //for
+	}
 
-	//append last line in buffer
 	if _, e := buf.WriteString(encoded[nbrLines*lineMaxLength:]); e != nil {
 		c.log.Info(e.Error())
 	}
 
-	//part 3 will be the attachment
 	part3 = fmt.Sprintf("\r\nContent-Type: application/csv; name=\"%s\"\r\nContent-Transfer-Encoding:base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s--", fileLocation, fileName, buf.String(), marker)
 
-	//send the email
 	err := smtp.SendMail(c.smtpServerUrl, nil, c.emailFrom, []string{c.emailTo}, []byte(part1+part2+part3))
-
-	//check for SendMail error
 	if err != nil {
 		c.log.Fatal(err.Error())
-	} //if
+	}
 }

@@ -8,94 +8,99 @@ import (
 	"os"
 	"path/filepath"
 )
+
 type tst func() error
 
+type CompressApp struct {
+	fileutils *fileutils.FileUtils
+}
+
 //DoZipFile pack file "filename" to the destination file "filename".zip
-func DoZipFile(filename string) error {
+func (z *CompressApp) DoZipFile(filename string) error {
 	//check exist file
-   
-	if fileutils.Exists(filename + ".zip") {
+
+	if z.fileutils.Exists(filename + ".zip") {
 		err := fileutils.ErrFileAlreadyExists
 		log.Println("err", err)
 		return err
 	}
 	//check exist file end
-	newfile, err := os.Create(filename + ".zip")
+	newFile, err := os.Create(filename + ".zip")
 	if err != nil {
-		return err
-	}	 
-   defer checkErrorFunc(newfile.Close)
-
-	zipit := zip.NewWriter(newfile)	
-	defer checkErrorFunc(zipit.Close)
-    
-	zipfile, err := os.Open(filename)
-	if err != nil {
-		return err
-	}	
-	defer checkErrorFunc(zipfile.Close)
-   
-	// get the file information
-	info, err := zipfile.Stat()
-	if err != nil {		
 		return err
 	}
-   
+	defer z.checkErrorFunc(newFile.Close)
+
+	zipit := zip.NewWriter(newFile)
+	defer z.checkErrorFunc(zipit.Close)
+
+	zipFile, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer z.checkErrorFunc(zipFile.Close)
+
+	// get the file information
+	info, err := zipFile.Stat()
+	if err != nil {
+		return err
+	}
+
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		return err
 	}
 
 	header.Method = zip.Deflate
-    
+
 	writer, err := zipit.CreateHeader(header)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(writer, zipfile)
+	_, err = io.Copy(writer, zipFile)
 	return err
 
 }
 
-func checkError(e error) {
+func (z *CompressApp) checkError(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
-func checkErrorFunc(fnc tst) {
-	e:=fnc()
+func (z *CompressApp) checkErrorFunc(fnc tst) {
+	e := fnc()
 	if e != nil {
 		panic(e)
 	}
 }
-func cloneZipItem(f *zip.File, outDir string) {
+func (z *CompressApp) cloneZipItem(f *zip.File, outDir string) {
 	// Create full directory path
 	path := filepath.Join(outDir, f.Name)
 	err := os.MkdirAll(filepath.Dir(path), os.ModeDir|os.ModePerm)
-	checkError(err)
+	z.checkError(err)
 	// Clone if item is a file
 	rc, err := f.Open()
-	checkError(err)
+	z.checkError(err)
 	if !f.FileInfo().IsDir() {
 		// Use os.Create() since Zip don't store file permissions.
 		fileCopy, err := os.Create(path)
-		checkError(err)
+		z.checkError(err)
 		_, err = io.Copy(fileCopy, rc)
-		checkError(fileCopy.Close())
-		checkError(err)
+		z.checkError(fileCopy.Close())
+		z.checkError(err)
 	}
-	checkError(rc.Close())
+	z.checkError(rc.Close())
 }
 
 //DoExtractFile Unzip the file to the destination folder
-func DoExtractFile(zipPath, outDir string) error {
-	r, err := zip.OpenReader(zipPath)	
-	defer checkErrorFunc(r.Close)
+func (z *CompressApp) DoExtractFile(zipPath, outDir string) error {
+	r, err := zip.OpenReader(zipPath)
+	defer z.checkErrorFunc(r.Close)
 	if err != nil {
 		return err
 	}
 	for _, f := range r.File {
-		cloneZipItem(f, outDir)
+		z.cloneZipItem(f, outDir)
 	}
 	return nil
 }

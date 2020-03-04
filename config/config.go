@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,76 +10,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/level"
 )
+
 const EnvPrefix = "GOBAK"
 
-//Errors in the configuration file
-var (
-	ErrFolderBackupNotExists = errors.New("Config: Folder for backup not found")
-	ErrConfigLevel           = errors.New("Config: levels not found")
-	ErrNbackupNotExists      = errors.New("Config: file Nbackup destination not exists")
-	ErrGfixNotExists         = errors.New("Config: file gfix  destination not exists")
-	ErrPhysicalNotExists     = errors.New("Config: Physicalpathdb destination not exists")
-	ErrAliasDBNotExists      = errors.New("Config: Alias DB is empty")
-)
-
 var cfg *Config
-
-type redisconfig struct {
-	Enabled          bool   `json:"enabled"`
-	Addr             string `json:"address"`
-	Password         string `json:"password"`
-	DB               int    `json:"db"`
-	Timeout          int    `json:"timeout"` // default 1 sec
-	Queue            int    `json:"queue"`   //default 100
-	SendStatsEnabled bool
-	PeriodStats      time.Duration `json:"periodstats"`
-}
-
-//A Config it contains the application settings from a file config.json
-type Config struct {
-	PathToNbackup      string      `json:"PathToNbackup"`
-	PathToBackupFolder string      `json:"PathToBackupFolder"`
-	DirectIO           bool        `json:"DirectIO"`
-	AliasDb            string      `json:"AliasDb"`
-	Password           string      `json:"Password"`
-	User               string      `json:"User"`
-	EmailFrom          string      `json:"EmailFrom"`
-	EmailTo            string      `json:"EmailTo"`
-	SMTPServer         string      `json:"SmtpServer"`
-	Pathtogfix         string      `json:"Pathtogfix"`
-	Physicalpathdb     string      `json:"Physicalpathdb"`
-	NameBase           string      `json:"NameBase"`
-	DeleteInt          int         `json:"DeleteInt"`
-	TimeMsec           int         `json:"TimeMlsc"`
-	Redis              redisconfig `json:"redis"`
-	Levels             []struct {
-		Level int    `json:"level"`
-		Tick  string `json:"tick"`
-		Check bool   `json:"check"`
-	} `json:"levels"`
-
-	file         string
-	LevelsConfig *level.Levels
-}
 
 //Current returns a *Config each time one and the same or or will be creating it
 func Current() *Config {
 	if cfg == nil {
-		fileconfig := "config.json"
+		fileConfig := "config.json"
 
-		if _, e := os.Stat(fileconfig); e != nil && os.IsNotExist(e) {
-			fileconfig = filepath.Join(filepath.Dir(os.Args[0]), "config.json")
+		if _, e := os.Stat(fileConfig); e != nil && os.IsNotExist(e) {
+			fileConfig = filepath.Join(filepath.Dir(os.Args[0]), "config.json")
 		}
 		if cfg == nil {
 			var err error
-			cfg, err = loadConfig(fileconfig)
+			cfg, err = loadConfig(fileConfig)
 			if err != nil {
 				panic(err)
 			}
-			cfg.file = fileconfig
+			cfg.file = fileConfig
 		}
 	}
 	return cfg
@@ -162,16 +113,16 @@ func loadConfig(filename string) (result *Config, err error) {
 
 //Check config file
 func (c *Config) Check() error {
-	if !fileutils.Exists(c.PathToNbackup) {
+	if !c.fileutils.Exists(c.PathToNbackup) {
 		return ErrNbackupNotExists
 	}
-	if !fileutils.Exists(c.Pathtogfix) {
+	if !c.fileutils.Exists(c.Pathtogfix) {
 		return ErrGfixNotExists
 	}
-	if !fileutils.Exists(c.Physicalpathdb) {
+	if !c.fileutils.Exists(c.Physicalpathdb) {
 		return ErrPhysicalNotExists
 	}
-	if !fileutils.Exists(c.PathToBackupFolder) {
+	if !c.fileutils.Exists(c.PathToBackupFolder) {
 		return ErrFolderBackupNotExists
 	}
 	if f, e := os.Stat(c.PathToBackupFolder); e != nil && (os.IsNotExist(e) || !f.IsDir()) {

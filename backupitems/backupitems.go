@@ -3,9 +3,6 @@ package backupitems
 import (
 	"path/filepath"
 	"strconv"
-	"time"
-
-	"github.com/pharmacy72/gobak/level"
 )
 
 //A StatusBackup type options for the items of backup
@@ -16,22 +13,6 @@ const (
 	StatusNormal   StatusBackup = 0
 	StatusArchived StatusBackup = 1
 )
-
-//A BackupItem contains information about a particular backup
-type BackupItem struct {
-	ID         int
-	Level      level.Level
-	GUID       string
-	GUIDParent string
-	Date       time.Time
-	Status     StatusBackup
-	Hash       string
-	FileName   string
-	Modified   bool
-	Insert     bool
-	Parent     *BackupItem
-	basefolder string
-}
 
 //ChainWithAllParents returns an array with all the ancestors (levels)
 // of the backup, including himself
@@ -55,9 +36,8 @@ func (r *BackupItem) IsArchived() bool {
 	return r.Status&StatusArchived == StatusArchived
 }
 
-//New item of BackupItem
-func New(pathbackup string) *BackupItem {
-	result := &BackupItem{}
-	result.basefolder = pathbackup
-	return result
+func New(pathBackup string) *BackupItem {
+	return &BackupItem{
+		basefolder: pathBackup,
+	}
 }
