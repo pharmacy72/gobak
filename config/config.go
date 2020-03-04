@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pharmacy72/gobak/fileutils"
 	"github.com/pharmacy72/gobak/level"
 )
 
@@ -114,16 +113,16 @@ func loadConfig(filename string) (result *Config, err error) {
 
 //Check config file
 func (c *Config) Check() error {
-	if !fileutils.Exists(c.PathToNbackup) {
+	if !c.fileutils.Exists(c.PathToNbackup) {
 		return ErrNbackupNotExists
 	}
-	if !fileutils.Exists(c.Pathtogfix) {
+	if !c.fileutils.Exists(c.Pathtogfix) {
 		return ErrGfixNotExists
 	}
-	if !fileutils.Exists(c.Physicalpathdb) {
+	if !c.fileutils.Exists(c.Physicalpathdb) {
 		return ErrPhysicalNotExists
 	}
-	if !fileutils.Exists(c.PathToBackupFolder) {
+	if !c.fileutils.Exists(c.PathToBackupFolder) {
 		return ErrFolderBackupNotExists
 	}
 	if f, e := os.Stat(c.PathToBackupFolder); e != nil && (os.IsNotExist(e) || !f.IsDir()) {
