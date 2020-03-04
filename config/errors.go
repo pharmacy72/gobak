@@ -1,5 +1,7 @@
 package config
+
 import "errors"
+
 var (
 	ErrFolderBackupNotExists = errors.New("config: Folder for backup not found")
 	ErrConfigLevel           = errors.New("config: levels not found")

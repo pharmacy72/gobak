@@ -8,6 +8,7 @@ import (
 	"github.com/pharmacy72/gobak/application"
 	"os"
 )
+
 var app *application.Application
 
 func main() {

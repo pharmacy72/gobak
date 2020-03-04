@@ -23,14 +23,14 @@ const nameApp = "GoBak"
 const copyright = "AO Pharmacy,Tyumen, Russia, 2015-2020"
 
 type Application struct {
-	cliApp  *cli.App
-	svc     service.Service
-	sMail   *smail.MailApp
-	dbopers *dbopers.Database
+	cliApp    *cli.App
+	svc       service.Service
+	sMail     *smail.MailApp
+	dbopers   *dbopers.Database
 	fileutils *fileutils.FileUtils
-	Verbose bool
-	Start   bool
-	Debug   bool
+	Verbose   bool
+	Start     bool
+	Debug     bool
 }
 
 var app *Application

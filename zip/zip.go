@@ -11,13 +11,12 @@ import (
 
 type tst func() error
 
-
 type CompressApp struct {
 	fileutils *fileutils.FileUtils
 }
 
 //DoZipFile pack file "filename" to the destination file "filename".zip
-func(z *CompressApp) DoZipFile(filename string) error {
+func (z *CompressApp) DoZipFile(filename string) error {
 	//check exist file
 
 	if z.fileutils.Exists(filename + ".zip") {
@@ -63,18 +62,18 @@ func(z *CompressApp) DoZipFile(filename string) error {
 
 }
 
-func (z *CompressApp)checkError(e error) {
+func (z *CompressApp) checkError(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
-func (z *CompressApp)checkErrorFunc(fnc tst) {
+func (z *CompressApp) checkErrorFunc(fnc tst) {
 	e := fnc()
 	if e != nil {
 		panic(e)
 	}
 }
-func (z *CompressApp)cloneZipItem(f *zip.File, outDir string) {
+func (z *CompressApp) cloneZipItem(f *zip.File, outDir string) {
 	// Create full directory path
 	path := filepath.Join(outDir, f.Name)
 	err := os.MkdirAll(filepath.Dir(path), os.ModeDir|os.ModePerm)
@@ -94,7 +93,7 @@ func (z *CompressApp)cloneZipItem(f *zip.File, outDir string) {
 }
 
 //DoExtractFile Unzip the file to the destination folder
-func (z *CompressApp)DoExtractFile(zipPath, outDir string) error {
+func (z *CompressApp) DoExtractFile(zipPath, outDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	defer z.checkErrorFunc(r.Close)
 	if err != nil {

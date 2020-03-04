@@ -1,10 +1,10 @@
 package application
 
 import (
-	"github.com/pharmacy72/gobak/config"
-	"os"
-	"github.com/urfave/cli/v2"
 	"fmt"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/urfave/cli/v2"
+	"os"
 )
 
 func (a *Application) BeforeAction() *Application {
