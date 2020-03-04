@@ -1,9 +1,9 @@
 Name:       gobak
 Version:    0.2
 Release:    1
-Summary:    A program for make increment backup for firebird
-Packager:   Gordienko R. formeo@pahrm-tmn.ru
-Vendor:     AO Pharmacy,Russia,Tyumen
+Summary:    The program for make increment backup for firebird
+Packager:   Gordienko R. formeo@yandex.ru
+Vendor:     AO Pharmacy,Russia, Tyumen
 URL:        http://www.pharm-tmn.ru/gobak
 Source0:    gobak
 Source1:    config.json   

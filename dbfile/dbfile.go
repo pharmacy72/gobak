@@ -1,11 +1,10 @@
 package dbfile
 
 import (
-	"errors"
 	"fmt"
-
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/fileutils"
+	"go.uber.org/zap"
 
 	"os"
 	"strings"
@@ -15,32 +14,30 @@ import (
 	"github.com/pharmacy72/gobak/smail"
 )
 
-// Errors in the processing of a database file
-var (
-	ErrDBFileNotFound       = errors.New("DBFile: file database not found")
-	ErrDBFileProtected      = errors.New("DBFile: can't overwrite original database")
-	ErrCheckBase            = errors.New("DBFile: check has errors")
-	ErrDBFileSourceNotFound = errors.New("DBFile: for restore not found the sourses backup")
-)
-
 //A DBFile it allows you to work with the database: check, block, restore, etc.
 type DBFile struct {
-	locked   bool
-	verbose  bool
-	Filename string
-	Alias    string
-	User     string
-	Password string
+	locked    bool
+	verbose   bool
+	Filename  string
+	Alias     string
+	User      string
+	Password  string
+	fileUtils *fileutils.FileUtils
+	sMail     *smail.MailApp
+	log       *zap.Logger
 }
 
 //New create *DBFile
-func New(filename, alias, user, password string, verbose bool) *DBFile {
+func New(filename, alias, user, password string, verbose bool, fileutils *fileutils.FileUtils, smail *smail.MailApp, log *zap.Logger) *DBFile {
 	result := &DBFile{
-		Filename: filename,
-		Alias:    alias,
-		User:     user,
-		Password: password,
-		verbose:  verbose,
+		Filename:  filename,
+		Alias:     alias,
+		User:      user,
+		Password:  password,
+		verbose:   verbose,
+		fileUtils: fileutils,
+		sMail:     smail,
+		log:       log,
 	}
 	if !result.Exists() {
 		panic(ErrDBFileNotFound)
@@ -61,6 +58,7 @@ func (d *DBFile) Exists() bool {
 //Lock Locked DB nbackup -L
 func (d *DBFile) Lock() error {
 	if d.verbose {
+		d.log.Info(fmt.Sprintf("Lock %v", d.Alias))
 		fmt.Println("Lock", d.Alias)
 	}
 	cmd := command.Exec(d.verbose, config.Current().PathToNbackup, "-U", d.User, "-P", d.Password, "-L", d.Alias)
@@ -77,6 +75,7 @@ func (d *DBFile) Unlock(force bool) error {
 		return nil
 	}
 	if d.verbose {
+		d.log.Info(fmt.Sprintf("Unlock %v", d.Alias))
 		fmt.Println("Unlock", d.Alias)
 	}
 	cmd := command.Exec(d.verbose, config.Current().PathToNbackup, "-U", d.User, "-P", d.Password, "-N", d.Alias)
@@ -100,14 +99,14 @@ func (d *DBFile) Copy(dest string, overwrite bool) (*DBFile, error) {
 	if d.verbose {
 		fmt.Println("Copy ", d.Filename, "to", dest)
 	}
-	if _, err := fileutils.FileCopy(d.Filename, dest, overwrite); err != nil {
+	if _, err := d.fileUtils.FileCopy(d.Filename, dest, overwrite); err != nil {
 		return nil, err
 	}
 
 	if d.verbose {
 		fmt.Println("Copied", d.Alias, "into ", dest)
 	}
-	return New(dest, dest, d.User, d.Password, d.verbose), nil
+	return New(dest, dest, d.User, d.Password, d.verbose, d.fileUtils, d.sMail, d.log), nil
 }
 
 //Remove the database file from disk with checking production database protection
@@ -132,6 +131,7 @@ func (d *DBFile) Fixup() error {
 
 //Check using gfix for full validation database
 func (d *DBFile) Check() error {
+
 	if d.verbose {
 		fmt.Println("Starting check database", d.Filename)
 	}
@@ -141,10 +141,10 @@ func (d *DBFile) Check() error {
 	}
 
 	outCheck := cmd.Stdout.Buffer.String()
-	if cmd.Error != nil || string(outCheck) != "" {
+	if cmd.Error != nil || outCheck != "" {
 		outerr := cmd.Stderr.Buffer.String()
 		outCheck += "\n" + outerr
-		smail.MailSend(string(outCheck), config.Current().AliasDb+": Check base is not correct", "", "")
+		d.sMail.MailSend(outCheck, config.Current().AliasDb+": Check base is not correct", "", "")
 		if cmd.Error != nil {
 			return wrapCmd2ErrOut(cmd, true)
 		}
@@ -166,7 +166,7 @@ func (d *DBFile) IsLocked() bool {
 
 //Restore database  to a destination folder "dest" with the "files" (name of backup the files)
 //with  a checking  overwrite of production database protection
-func Restore(dest string, files []string, verbose bool) (*DBFile, error) {
+func (d *DBFile) Restore(dest string, files []string, verbose bool) (*DBFile, error) {
 	if IsProtected(dest) {
 		return nil, ErrDBFileProtected
 	}
@@ -175,7 +175,7 @@ func Restore(dest string, files []string, verbose bool) (*DBFile, error) {
 	}
 	//check exists sources
 	for _, f := range files {
-		if !fileutils.Exists(f) {
+		if !d.fileUtils.Exists(f) {
 			return nil, ErrDBFileSourceNotFound
 		}
 	}
@@ -192,5 +192,5 @@ func Restore(dest string, files []string, verbose bool) (*DBFile, error) {
 	if command.Error != nil {
 		return nil, wrapCmd2ErrOut(command, true)
 	}
-	return New(dest, dest, config.Current().User, config.Current().Password, verbose), nil
+	return New(dest, dest, config.Current().User, config.Current().Password, verbose, d.fileUtils, d.sMail, d.log), nil
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/pharmacy72/gobak/md5f"
 	"github.com/pharmacy72/gobak/zip"
 	"os"
-	
 )
 
 //UnPackItem Unzip the backup file to the destination folder "outDir"
@@ -16,9 +15,9 @@ func (r *BackupItem) UnPackItem(outDir string) error {
 
 //PackItem archives backup file,delOrgiginal - delete the original file
 func (r *BackupItem) PackItem(delOrgiginal bool) (err error) {
-	
+
 	fileNameNoZip := r.FilePath()
-	
+
 	err = zip.DoZipFile(fileNameNoZip)
 	if err != nil {
 		return err

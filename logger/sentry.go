@@ -1,14 +1,13 @@
 package logger
 
 import (
-	"stash.lamoda.ru/mdev/gamanok/config"
-
 	"github.com/getsentry/sentry-go"
+	"github.com/pharmacy72/gobak/config"
 )
 
 func InitSentry(conf *config.Config) error {
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn: conf.SentryDSN,
+		//Dsn: conf.SentryDSN,
 	})
 	if err != nil {
 		return err

@@ -7,19 +7,26 @@ import (
 
 	_ "github.com/nakagami/firebirdsql"
 	"github.com/pharmacy72/gobak/backupitems"
-	"github.com/pharmacy72/gobak/config"
 )
 
+const DRIVER = "firebirdsql"
+
+type DatabaseApp struct {
+	username string
+	password string
+	pathToDB string
+}
+
 //check existing last chain in backup_history
-func LastLastChainIntoFirebird(c []*backupitems.BackupItem) (bool, error) {
+func (f *DatabaseApp) LastLastChainIntoFirebird(backupItems []*backupitems.BackupItem) (bool, error) {
 	var n int
-	conn, err := sql.Open("firebirdsql", config.Current().User+":"+config.Current().Password+"@127.0.0.1/"+config.Current().Physicalpathdb)
+	conn, err := sql.Open(DRIVER, f.username+":"+f.password+"@127.0.0.1/"+f.pathToDB)
 	if err != nil {
 		return false, err
 	}
 	defer conn.Close()
 
-	for _, itm := range c {
+	for _, itm := range backupItems {
 
 		stmt, err := conn.Prepare("SELECT Count(*) FROM rdb$backup_history where rdb$file_name =?")
 		defer stmt.Close()

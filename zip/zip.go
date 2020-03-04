@@ -8,51 +8,52 @@ import (
 	"os"
 	"path/filepath"
 )
+
 type tst func() error
 
 //DoZipFile pack file "filename" to the destination file "filename".zip
 func DoZipFile(filename string) error {
 	//check exist file
-   
+
 	if fileutils.Exists(filename + ".zip") {
 		err := fileutils.ErrFileAlreadyExists
 		log.Println("err", err)
 		return err
 	}
 	//check exist file end
-	newfile, err := os.Create(filename + ".zip")
+	newFile, err := os.Create(filename + ".zip")
 	if err != nil {
-		return err
-	}	 
-   defer checkErrorFunc(newfile.Close)
-
-	zipit := zip.NewWriter(newfile)	
-	defer checkErrorFunc(zipit.Close)
-    
-	zipfile, err := os.Open(filename)
-	if err != nil {
-		return err
-	}	
-	defer checkErrorFunc(zipfile.Close)
-   
-	// get the file information
-	info, err := zipfile.Stat()
-	if err != nil {		
 		return err
 	}
-   
+	defer checkErrorFunc(newFile.Close)
+
+	zipit := zip.NewWriter(newFile)
+	defer checkErrorFunc(zipit.Close)
+
+	zipFile, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer checkErrorFunc(zipFile.Close)
+
+	// get the file information
+	info, err := zipFile.Stat()
+	if err != nil {
+		return err
+	}
+
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		return err
 	}
 
 	header.Method = zip.Deflate
-    
+
 	writer, err := zipit.CreateHeader(header)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(writer, zipfile)
+	_, err = io.Copy(writer, zipFile)
 	return err
 
 }
@@ -63,7 +64,7 @@ func checkError(e error) {
 	}
 }
 func checkErrorFunc(fnc tst) {
-	e:=fnc()
+	e := fnc()
 	if e != nil {
 		panic(e)
 	}
@@ -89,7 +90,7 @@ func cloneZipItem(f *zip.File, outDir string) {
 
 //DoExtractFile Unzip the file to the destination folder
 func DoExtractFile(zipPath, outDir string) error {
-	r, err := zip.OpenReader(zipPath)	
+	r, err := zip.OpenReader(zipPath)
 	defer checkErrorFunc(r.Close)
 	if err != nil {
 		return err
