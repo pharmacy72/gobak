@@ -1,5 +1,5 @@
 Name:       gobak
-Version:    0.2
+Version:    0.5.0
 Release:    1
 Summary:    The program for make increment backup for firebird
 Packager:   Gordienko R. formeo@yandex.ru

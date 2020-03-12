@@ -2,10 +2,13 @@ package main
 
 // 31.08.2015 created by Formeo
 
-//TODO: Logger
 import (
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"github.com/pharmacy72/gobak/application"
+	"github.com/pharmacy72/gobak/config"
+	"github.com/pharmacy72/gobak/logger"
+	"github.com/pharmacy72/gobak/smail"
 	"os"
 )
 
@@ -24,7 +27,17 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	app = application.NewApplication()
+	conf := config.Current()
+	err := logger.InitSentry(conf)
+	if err != nil {
+		panic(err)
+	}
+	log, err := logger.NewLogger(conf)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	sMail:=smail.NewMailApp("smtpServerUrl", log, "emailTo string", "emailFrom string")
+	app = application.NewApplication(sMail)
 	app.Run()
 	return
 

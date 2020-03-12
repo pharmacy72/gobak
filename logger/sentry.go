@@ -7,7 +7,7 @@ import (
 
 func InitSentry(conf *config.Config) error {
 	err := sentry.Init(sentry.ClientOptions{
-		//Dsn: conf.SentryDSN,
+		Dsn: conf.SentryDSN,
 	})
 	if err != nil {
 		return err

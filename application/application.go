@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/kardianos/service"
+	"github.com/pharmacy72/gobak/bservice"
 	"github.com/pharmacy72/gobak/config"
 	"github.com/pharmacy72/gobak/dbopers"
 	"github.com/pharmacy72/gobak/errout"
@@ -12,6 +13,7 @@ import (
 	"github.com/pharmacy72/gobak/snap"
 	"github.com/pharmacy72/gobak/svc"
 	"github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,6 +33,8 @@ type Application struct {
 	Verbose   bool
 	Start     bool
 	Debug     bool
+	log       *zap.Logger
+	bservice  *bservice.Bservice
 }
 
 var app *Application
@@ -42,9 +46,9 @@ func (a *Application) PrintVerbose(s string) {
 }
 func (a *Application) logerror(err error) {
 	if err != nil {
-		log.Println(err)
+		a.log.Error(err.Error())
 		if a.Verbose {
-			fmt.Println(err)
+			a.log.Error(err.Error())
 		}
 	}
 }
@@ -63,13 +67,13 @@ func (a *Application) ErrOut2mail(err interface{}) bool {
 }
 
 func (a *Application) DefineCommands() *Application {
-	a.cliApp.Commands = []cli.Command{
+	a.cliApp.Commands = []*cli.Command{
 		{
 			Name:        "database",
 			Aliases:     []string{"db"},
 			Usage:       "Database manipulations",
 			Description: "Database manipulations",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:   "lock",
 					Usage:  "Lock for backup",
@@ -85,7 +89,7 @@ func (a *Application) DefineCommands() *Application {
 					Name:  "check",
 					Usage: "Check database",
 					Flags: []cli.Flag{
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "noclear,n",
 							Usage: "Don't remove a database copy",
 						},
@@ -98,11 +102,11 @@ func (a *Application) DefineCommands() *Application {
 					Aliases: []string{"cp"},
 					Usage:   "Copy database file with lock and fixup destination database",
 					Flags: []cli.Flag{
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "force, f",
 							Usage: "Warning!!! overwrite destination ",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "output, o",
 							Usage: "FileName of destination",
 						},
@@ -114,19 +118,19 @@ func (a *Application) DefineCommands() *Application {
 					Name:  "restore",
 					Usage: "Restore database",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "file",
 							Usage: "Restory from file(must be full path)",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "id",
 							Usage: "Restory by identifier",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "output, o",
 							Usage: "FileName of destination",
 						},
-						cli.BoolTFlag{
+						&cli.BoolFlag{
 							Name:  "hash",
 							Usage: "Check hash for each the backup file",
 						},
@@ -140,7 +144,7 @@ func (a *Application) DefineCommands() *Application {
 			Aliases:     []string{"repo"},
 			Usage:       "Repository operations",
 			Description: "Repository operations",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:        "list",
 					Usage:       "show all backup entites into repository",
@@ -153,11 +157,11 @@ func (a *Application) DefineCommands() *Application {
 					Usage:       "show statistics from the repository: count files, count packed, last backups",
 					Description: "show statistics",
 					Flags: []cli.Flag{
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "hash",
 							Usage: "Check hash of file",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "id",
 							Usage: "id(s) backup.View information about a backup",
 						},
@@ -177,7 +181,7 @@ func (a *Application) DefineCommands() *Application {
 			Aliases:     []string{"svc", "daemon"},
 			Usage:       "sevice(daemon) managment",
 			Description: "sevice(daemon) managment",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:   "install",
 					Usage:  "install service(daemon)",
@@ -268,15 +272,15 @@ func (a *Application) internalRun() error {
 
 func (a *Application) GlobalFlags() *Application {
 	a.cliApp.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "start, s",
 			Usage: "start service(daemon) or CLI mode",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "debug, d",
 			Usage: "enable debug mode when -start on CLI mode",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "verbose",
 			Usage: "Increment verbosity",
 		},
@@ -290,12 +294,15 @@ func (a *Application) Run() *Application {
 	}
 	return a
 }
-func NewApplication() *Application {
+func NewApplication(sMail *smail.MailApp) *Application {
 
 	snap.Start()
 
-	result := &Application{}
-	result.cliApp = cli.NewApp()
+	result := &Application{
+		sMail:  sMail,
+		cliApp: cli.NewApp(),
+	}
+
 	result.cliApp.Name = nameApp
 	result.cliApp.Version = version
 	result.cliApp.Copyright = copyright

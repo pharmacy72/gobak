@@ -19,6 +19,10 @@ type redisconfig struct {
 
 type Config struct {
 	fileutils          *fileutils.FileUtils
+	Loglevel           string       `json:"Loglevel"`
+	DevMode            bool         `json:"DevMode"`
+	Version            string       `json:"Version"`
+	SentryDSN          string       `json:"SentryDSN"`
 	PathToNbackup      string       `json:"PathToNbackup"`
 	PathToBackupFolder string       `json:"PathToBackupFolder"`
 	DirectIO           bool         `json:"DirectIO"`
