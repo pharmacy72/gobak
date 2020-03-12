@@ -46,14 +46,17 @@ type Database struct {
 	log       *zap.Logger
 	fileutils *fileutils.FileUtils
 	firebird  *firebird.DatabaseApp
+	bservice  *bservice.Bservice
+	dbf    *dbfile.DBFile
 }
 
-func NewDatabase(conf *config.Config, log *zap.Logger, fileutils *fileutils.FileUtils, firebird *firebird.DatabaseApp) *Database {
+func NewDatabase(conf *config.Config, log *zap.Logger, fileutils *fileutils.FileUtils, firebird *firebird.DatabaseApp, bservice *bservice.Bservice) *Database {
 	return &Database{
 		conf:      conf,
 		log:       log,
 		fileutils: fileutils,
 		firebird:  firebird,
+		bservice:  bservice,
 	}
 
 }
@@ -66,9 +69,9 @@ func (d *Database) doVerbose(verbose bool, a ...interface{}) {
 
 // DoCheckBase checkbase copy: lock->copy->unlock->check copy
 func (d *Database) DoCheckBase(verbose bool, notclear bool) (res bool, err error) {
-	dbf := dbfile.New(d.conf.Physicalpathdb, d.conf.AliasDb, d.conf.User, d.conf.Password, verbose)
+	//dbf := d.dbfile.New(d.conf.Physicalpathdb, d.conf.AliasDb, d.conf.User, d.conf.Password, verbose, d.fileutils, d.smail, d.log)
 	unlock := func() bool {
-		e := dbf.Unlock(false)
+		e := d.dbf.Unlock(false)
 		if e != nil {
 			res = false
 			err = e
@@ -76,19 +79,19 @@ func (d *Database) DoCheckBase(verbose bool, notclear bool) (res bool, err error
 		return e == nil
 	}
 
-	if err := dbf.Lock(); err != nil {
+	if err := d.dbf.Lock(); err != nil {
 		return false, err
 	}
 	defer unlock()
 
-	dbNameCpy := d.fileutils.GetTempFile(filepath.Dir(dbf.Filename), "copy."+filepath.Base(dbf.Filename))
-	dbFCopy, e := dbf.Copy(dbNameCpy, false)
+	dbNameCpy := d.fileutils.GetTempFile(filepath.Dir(d.dbf.Filename), "copy."+filepath.Base(d.dbf.Filename))
+	dbFCopy, e := d.dbf.Copy(dbNameCpy, false)
 	if e != nil {
 		return false, e
 	}
 	if !notclear {
 		defer func() {
-			if err := dbFCopy.Remove(); err != nil {
+			if err := d.dbf.Remove(); err != nil {
 				log.Println("failed remove copy db ", err)
 			}
 		}()
@@ -108,9 +111,9 @@ func (d *Database) DoCheckBase(verbose bool, notclear bool) (res bool, err error
 
 //DoEndBackup Send database end backup
 func (d *Database) DoEndBackup(verbose bool) error {
-	cfg := config.Current()
-	dbf := dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
-	if err := dbf.Unlock(true); err != nil {
+	//cfg := config.Current()
+	//dbf := d.dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
+	if err := d.dbf.Unlock(true); err != nil {
 		return err
 	}
 	return nil
@@ -118,9 +121,9 @@ func (d *Database) DoEndBackup(verbose bool) error {
 
 //DoStartBackup Send database start backup
 func (d *Database) DoStartBackup(verbose bool) error {
-	cfg := config.Current()
-	dbf := dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
-	if err := dbf.Lock(); err != nil {
+	//cfg := config.Current()
+	//dbf := d.dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
+	if err := d.dbf.Lock(); err != nil {
 		return err
 	}
 	return nil
@@ -128,22 +131,22 @@ func (d *Database) DoStartBackup(verbose bool) error {
 
 //DoCopyDataBase Copy database with lock/unlock
 func (d *Database) DoCopyDataBase(dest string, ovewrite bool, verbose bool) (err error) {
-	cfg := config.Current()
-	dbf := dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
+	//cfg := config.Current()
+	//dbf := d.dbfile.New(cfg.Physicalpathdb, cfg.AliasDb, cfg.User, cfg.Password, verbose)
 	unlock := func() bool {
-		e := dbf.Unlock(false)
+		e := d.dbf.Unlock(false)
 		if e != nil {
 			err = e
 		}
 		return e == nil
 	}
 	defer unlock()
-	if err := dbf.Lock(); err != nil {
+	if err := d.dbf.Lock(); err != nil {
 		return err
 	}
 
 	log.Println("Copy to ", dest)
-	dbfcopy, e := dbf.Copy(dest, ovewrite)
+	dbfcopy, e := d.dbf.Copy(dest, ovewrite)
 	if e != nil {
 		return e
 	}
@@ -204,7 +207,7 @@ func (d *Database) DoBackup(verbose bool) error {
 		if !isActual {
 			d.doVerbose(verbose, "Start do backup level:%s\n", i)
 			snap.Incr(config.Current().NameBase, "counters", snap.CounterStartBackup, 1)
-			if newbkp, e := bservice.Backup(verbose, i, parentGUID); e == nil {
+			if newbkp, e := d.bservice.Backup(verbose, i, parentGUID); e == nil {
 				d.doVerbose(verbose, "Successful backup %s. file %s\n", i, newbkp.FileName)
 				backupLevels[i] = newbkp
 				parentGUID = newbkp.GUID
@@ -234,7 +237,7 @@ func (d *Database) DoBackup(verbose bool) error {
 				}
 
 				if (e != nil) && (e.Error() != dbfile.ErrCheckBase.Error()) {
-					log.Print("CHECKBASE FAILED\n")
+					d.log.Info("CHECKBASE FAILED\n")
 					return e
 				}
 			}
@@ -252,9 +255,6 @@ func (d *Database) DoBackup(verbose bool) error {
 				return e
 			}
 		}
-
-		//snap.
-		//
 	}
 	return nil
 }
@@ -271,7 +271,7 @@ func (d *Database) DoPackItemsServ(verbose bool) (err error) {
 		return nil
 	}
 	count := 0
-	var sizewas, sizenow int64
+	var sizeWas, sizeNow int64
 	for i := 0; i < len(arr); i++ {
 		actual, _ := config.Current().LevelsConfig.IsActual(arr[i].Level, arr[i].Date, time.Now())
 		if actual || arr[i].IsArchived() {
@@ -290,8 +290,8 @@ func (d *Database) DoPackItemsServ(verbose bool) (err error) {
 			log.Println("Error packing:", arr[i].FilePath(), err)
 			return err
 		}
-		sizewas += swl
-		sizenow += d.fileutils.Size(arr[i].FilePath())
+		sizeWas += swl
+		sizeNow += d.fileutils.Size(arr[i].FilePath())
 		if err := arr[i].ComputeHash(); err != nil {
 			return err
 		}
@@ -309,10 +309,7 @@ func (d *Database) DoPackItemsServ(verbose bool) (err error) {
 			return err
 		}
 	}
-	/*if err = dbase.WriteBackupItems(arr); err != nil {
-		return err
-	}*/
-	d.doVerbose(verbose, "Packed files: %d, released space: %s \n", count, d.fileutils.SizeToFriendly(sizewas-sizenow))
+	d.doVerbose(verbose, "Packed files: %d, released space: %s \n", count, d.fileutils.SizeToFriendly(sizeWas-sizeNow))
 	return nil
 }
 
@@ -328,7 +325,7 @@ func (d *Database) DoList() error {
 		return err
 	}
 	if arr == nil {
-		fmt.Println("Not found records")
+		d.log.Info("Not found records")
 		return nil
 	}
 	ach := map[bool]string{
@@ -392,7 +389,7 @@ type statistic struct {
 }
 
 //DoStat print a statistic with information about backups
-func (d *Database) DoStat(w io.Writer, hashcheck bool, autosize bool) error {
+func (d *Database) DoStat(w io.Writer, hashCheck bool, autosize bool) error {
 	buf := bufio.NewWriter(w)
 	repo := backupitems.GetRepository()
 	//defer repo.Close()
@@ -416,7 +413,7 @@ func (d *Database) DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 	CommonStat["Found"] = 0
 	CommonStat["Not Found"] = 0
 
-	if hashcheck {
+	if hashCheck {
 		CommonStat["Corrupt"] = 0
 	}
 
@@ -444,7 +441,7 @@ func (d *Database) DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 		if item.Exists() {
 			CommonStat["Found"]++
 			AllSize += d.fileutils.Size(item.FilePath())
-			if hashcheck {
+			if hashCheck {
 				if ok, err := item.HashValid(); !ok {
 					if err != nil && err != md5f.ErrFileCorrupt {
 						buf.WriteString(err.Error())
@@ -464,10 +461,10 @@ func (d *Database) DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 	for i := 0; i <= maxLevel.Int(); i++ {
 		if value, ok := levelStat[i]; ok {
 			buf.WriteString(fmt.Sprintf("\tLevel %d: %d, size %s,min/max/avg  %s/%s/%s\n", i, value.count,
-				fileutils.SizeToFredly(value.all),
-				fileutils.SizeToFredly(value.min),
-				fileutils.SizeToFredly(value.max),
-				fileutils.SizeToFredly(value.all/int64(value.count))))
+				d.fileutils.SizeToFriendly(value.all),
+				d.fileutils.SizeToFriendly(value.min),
+				d.fileutils.SizeToFriendly(value.max),
+				d.fileutils.SizeToFriendly(value.all/int64(value.count))))
 		}
 	}
 	buf.WriteString("Statistic:")
@@ -477,7 +474,7 @@ func (d *Database) DoStat(w io.Writer, hashcheck bool, autosize bool) error {
 
 		}
 	}
-	buf.WriteString(fmt.Sprintf("\tTotal size: %s\n", fileutils.SizeToFredly(AllSize)))
+	buf.WriteString(fmt.Sprintf("\tTotal size: %s\n", d.fileutils.SizeToFriendly(AllSize)))
 	if arr != nil {
 		tab := fmttab.New("Last chain", fmttab.BorderDouble, nil)
 		tab.AddColumn("ID", 5, fmttab.AlignRight).

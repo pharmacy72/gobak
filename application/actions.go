@@ -20,10 +20,10 @@ func (a *Application) BeforeAction() *Application {
 
 func (a *Application) DefaultAction() *Application {
 
-	a.cliApp.Action = func(c *cli.Context) {
+	a.cliApp.Action = func(c *cli.Context) error {
 
 		if err := config.Current().Check(); err != nil {
-			panic(err)
+			return err
 		}
 		a.fileutils.MakeDirsLevels(config.Current().PathToBackupFolder, config.Current().LevelsConfig.MaxLevel().Int())
 		if a.Start && !c.Args().Present() {
@@ -50,6 +50,7 @@ func (a *Application) DefaultAction() *Application {
 			a.logerror(c.App.Command("help").Run(c))
 			os.Exit(1)
 		}
+		return nil
 	}
 	return a
 }

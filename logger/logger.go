@@ -1,13 +1,14 @@
 package logger
 
 import (
+	"github.com/pharmacy72/gobak/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func NewLogger(conf *config.Config) (*zap.Logger, error) {
 	level := zap.NewAtomicLevel()
-	err := level.UnmarshalText([]byte(conf.LogLevel))
+	err := level.UnmarshalText([]byte(conf.Loglevel))
 	if err != nil {
 		return nil, err
 	}
@@ -48,18 +49,6 @@ func getFields(conf *config.Config) []zapcore.Field {
 
 	if conf.Version != "" {
 		fields = append(fields, zap.String("component_version", conf.Version))
-	}
-
-	if conf.DockerId != "" {
-		fields = append(fields, zap.String("docker_id", conf.DockerId))
-	}
-
-	if conf.ClsToken != "" {
-		fields = append(fields, zap.String("cls_token", conf.ClsToken))
-	}
-
-	if conf.Index != "" {
-		fields = append(fields, zap.String("index", conf.Index))
 	}
 
 	return fields

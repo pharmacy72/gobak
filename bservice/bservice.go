@@ -8,9 +8,8 @@ do
   RestoreFromID
 */
 import (
-	"errors"
 	"fmt"
-	"log"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -27,26 +26,32 @@ import (
 	"github.com/pharmacy72/gobak/level"
 )
 
-// Errors
-var (
-	ErrFileDestAlreadyExists = errors.New("Destination file already exists")
-	ErrFileSourceNotFound    = errors.New("Backup by filename not found")
-	ErrIDSourceNotFound      = errors.New("Backup by identifier not found")
-	ErrFileCorrupt           = errors.New("The backup file is corrupt")
-)
+type Bservice struct {
+	log       *zap.Logger
+	fileutils *fileutils.FileUtils
+	dbfile    *dbfile.DBFile
+}
 
-func doVerbose(verbose bool, a ...interface{}) {
+func New(log *zap.Logger, fileutils *fileutils.FileUtils, dbfile *dbfile.DBFile) *Bservice {
+	return &Bservice{
+		log:       log,
+		fileutils: fileutils,
+		dbfile:    dbfile,
+	}
+}
+
+func (b *Bservice) doVerbose(verbose bool, a ...interface{}) {
 	if verbose {
 		fmt.Printf(a[0:1][0].(string), a[1:]...)
 	}
 }
 
-func wrapCmd2ErrOut(c *command.Command, reportIfError bool) *errout.ErrOut {
+func (b *Bservice) wrapCmd2ErrOut(c *command.Command, reportIfError bool) *errout.ErrOut {
 	return errout.New(c.Error, reportIfError, c.Stdout.Buffer, c.Stderr.Buffer)
 }
 
 //Backup make backup file for level
-func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.BackupItem, err error) {
+func (b *Bservice) Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.BackupItem, err error) {
 
 	res = backupitems.New(config.Current().PathToBackupFolder)
 	res.GUID = guid.New().String()
@@ -62,10 +67,10 @@ func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.Ba
 	args = append(args, "-U", config.Current().User, "-P",
 		config.Current().Password, "-B", strconv.Itoa(lev.Int()), config.Current().Physicalpathdb, res.FilePath())
 
-	log.Println("CMD:", args)
+	b.log.Info(fmt.Sprintf("CMD:", args))
 	cmd := command.Exec(verbose, config.Current().PathToNbackup, args[:]...)
 	if cmd.Error != nil {
-		return nil, wrapCmd2ErrOut(cmd, true)
+		return nil, b.wrapCmd2ErrOut(cmd, true)
 	}
 
 	if err := res.ComputeHash(); err != nil {
@@ -75,42 +80,42 @@ func Backup(verbose bool, lev level.Level, guidPrev string) (res *backupitems.Ba
 	return res, nil
 }
 
-func removeUnzipFiles(verbose bool, files []string) {
+func (b *Bservice) removeUnzipFiles(verbose bool, files []string) {
 	for i := 0; i < len(files); i++ {
 		if e := os.Remove(files[i]); e != nil {
-			log.Printf("Remove unpacked file %q error:%s\n", files[i], e)
+			b.log.Info(fmt.Sprintf("Remove unpacked file %q error:%s\n", files[i], e))
 		} else {
-			doVerbose(verbose, "Removed unpacket temp file backup:%s\n", files[i])
+			b.doVerbose(verbose, "Removed unpacket temp file backup:%s\n", files[i])
 		}
 	}
 }
 
 //Restore backup into dest, optional with to checking hash
-func Restore(dest string, elem *backupitems.BackupItem, hash bool, verbose bool) (res bool, err error) {
+func (b *Bservice) Restore(dest string, elem *backupitems.BackupItem, hash bool, verbose bool) (res bool, err error) {
 	var crapfiles []string
 	defer func() {
 		//remove unzipped files
-		removeUnzipFiles(verbose, crapfiles)
+		b.removeUnzipFiles(verbose, crapfiles)
 	}()
 
-	doVerbose(verbose, "Restore: backup(id %s) file %s\n", elem.ID, elem.FilePath())
+	b.doVerbose(verbose, "Restore: backup(id %s) file %s\n", elem.ID, elem.FilePath())
 	var restoreDest string
 	if dest != "" {
-		if fileutils.Exists(dest) {
+		if b.fileutils.Exists(dest) {
 			return false, ErrFileDestAlreadyExists
 		}
 		restoreDest = dest
 	} else {
-		restoreDest = fileutils.GetTempFile(config.Current().PathToBackupFolder, time.Now().Local().Format("2006-01-02_15_04")+".restore.fdb")
+		restoreDest = b.fileutils.GetTempFile(config.Current().PathToBackupFolder, time.Now().Local().Format("2006-01-02_15_04")+".restore.fdb")
 	}
-	doVerbose(verbose, "Destination:%s\n", restoreDest)
+	b.doVerbose(verbose, "Destination:%s\n", restoreDest)
 	//Get elements from repository
 	chain := elem.ChainWithAllParents()
 	var backupFiles []string
 	for _, n := range chain {
 		var srcFile string
 		if hash {
-			doVerbose(verbose, "Checking hash file\n")
+			b.doVerbose(verbose, "Checking hash file\n")
 			if ok, err := n.HashValid(); !ok {
 				if err != nil {
 					return false, err
@@ -119,7 +124,7 @@ func Restore(dest string, elem *backupitems.BackupItem, hash bool, verbose bool)
 			}
 		}
 		if n.IsArchived() {
-			doVerbose(verbose, "Unpack backup id(%s) file=%s", n.ID, n.FilePath())
+			b.doVerbose(verbose, "Unpack backup id(%s) file=%s", n.ID, n.FilePath())
 			if err := n.UnPackItem(config.Current().PathToBackupFolder); err != nil {
 				return false, err
 			}
@@ -131,15 +136,15 @@ func Restore(dest string, elem *backupitems.BackupItem, hash bool, verbose bool)
 		backupFiles = append(backupFiles, srcFile)
 	}
 
-	if _, err := dbfile.Restore(restoreDest, backupFiles, verbose); err != nil {
+	if _, err := b.dbfile.Restore(restoreDest, backupFiles, verbose); err != nil {
 		return false, err
 	}
-	doVerbose(verbose, "Restored.\n")
+	b.doVerbose(verbose, "Restored.\n")
 	return true, nil
 }
 
 //RestoreFromFile Restore backup into dest from filename,optional with to checking hash
-func RestoreFromFile(filename string, dest string, hash bool, verbose bool) error {
+func (b *Bservice) RestoreFromFile(filename string, dest string, hash bool, verbose bool) error {
 	repo := backupitems.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
@@ -152,7 +157,7 @@ func RestoreFromFile(filename string, dest string, hash bool, verbose bool) erro
 	}
 	for _, item := range arr {
 		if item.FilePath() == filename {
-			if _, err := Restore(dest, item, hash, verbose); err != nil {
+			if _, err := b.Restore(dest, item, hash, verbose); err != nil {
 				return err
 			}
 			return nil
@@ -162,7 +167,7 @@ func RestoreFromFile(filename string, dest string, hash bool, verbose bool) erro
 }
 
 //RestoreFromID Restore backup into dest by ID,optional with to checking hash
-func RestoreFromID(id int, dest string, hash bool, verbose bool) error {
+func (b *Bservice) RestoreFromID(id int, dest string, hash bool, verbose bool) error {
 	repo := backupitems.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
@@ -175,7 +180,7 @@ func RestoreFromID(id int, dest string, hash bool, verbose bool) error {
 		return ErrIDSourceNotFound
 	}
 	for _, item := range arr {
-		if _, err := Restore(dest, item, hash, verbose); err != nil {
+		if _, err := b.Restore(dest, item, hash, verbose); err != nil {
 			return err
 		}
 		return nil
