@@ -4,6 +4,7 @@ gobak (Go utility for nbackup firebird)
 ======================================
 ```
 ![Go](https://github.com/pharmacy72/gobak/workflows/Go/badge.svg?branch=master)
+[![Sourcegraph](https://sourcegraph.com/github.com/pharmacy72/gobak/-/badge.svg)](https://sourcegraph.com/github.com/pharmacy72/gobak?badge)
 
 ## Description
  * utility for nbackup [FireBird](http://firebirdsql.org) on Golang
