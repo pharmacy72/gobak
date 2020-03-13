@@ -3,7 +3,7 @@
 gobak (Go utility for nbackup firebird)
 ======================================
 ```
-[![Build Status](https://travis-ci.org/pharmacy72/gobak.svg?branch=master)](https://travis-ci.org/pharmacy72/gobak)
+![Go](https://github.com/pharmacy72/gobak/workflows/Go/badge.svg?branch=master)
 
 ## Description
  * utility for nbackup [FireBird](http://firebirdsql.org) on Golang
