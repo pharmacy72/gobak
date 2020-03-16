@@ -1,13 +1,10 @@
 package application
 
 import (
-
-
 	"github.com/pharmacy72/gobak/errout"
 
 	"errors"
 	"github.com/urfave/cli/v2"
-	"log"
 	"os"
 	"strconv"
 )
@@ -27,7 +24,7 @@ func (a *Application) unlock(c *cli.Context) error {
 }
 
 func (a *Application) check(c *cli.Context) error {
-	log.Println("Check database start")
+	a.log.Info("Check database start")
 	if _, err := a.dbopers.DoCheckBase(a.Verbose, c.Bool("noclear") || c.Bool("n")); err != nil {
 
 		return errout.AddSubject(err, ": check base is not correct")

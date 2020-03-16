@@ -14,6 +14,7 @@ DoStatBackup
 */
 import (
 	"fmt"
+	"github.com/pharmacy72/gobak/sqllite"
 	"log"
 	"os"
 	"path/filepath"
@@ -47,7 +48,7 @@ type Database struct {
 	fileutils *fileutils.FileUtils
 	firebird  *firebird.DatabaseApp
 	bservice  *bservice.Bservice
-	dbf    *dbfile.DBFile
+	dbf       *dbfile.DBFile
 }
 
 func NewDatabase(conf *config.Config, log *zap.Logger, fileutils *fileutils.FileUtils, firebird *firebird.DatabaseApp, bservice *bservice.Bservice) *Database {
@@ -163,7 +164,7 @@ func (d *Database) DoCopyDataBase(dest string, ovewrite bool, verbose bool) (err
 func (d *Database) DoBackup(verbose bool) error {
 	var FintoF bool
 	backupLevels := make(map[level.Level]*backupitems.BackupItem)
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	//defer repo.Close()
 	backups := repo.All()
 	all, err := backups.Get()
@@ -262,7 +263,7 @@ func (d *Database) DoBackup(verbose bool) error {
 //DoPackItemsServ Packing All Items who are not actual
 func (d *Database) DoPackItemsServ(verbose bool) (err error) {
 	var arr []*backupitems.BackupItem
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
 	if arr, err = backups.Get(); err != nil {
@@ -315,7 +316,7 @@ func (d *Database) DoPackItemsServ(verbose bool) (err error) {
 
 //DoList print a table with information about backups
 func (d *Database) DoList() error {
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
 
@@ -391,7 +392,7 @@ type statistic struct {
 //DoStat print a statistic with information about backups
 func (d *Database) DoStat(w io.Writer, hashCheck bool, autosize bool) error {
 	buf := bufio.NewWriter(w)
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	//defer repo.Close()
 	backups := repo.All()
 
@@ -594,7 +595,7 @@ func (d *Database) DoStat(w io.Writer, hashCheck bool, autosize bool) error {
 
 //DoStatBackup print a statistic with information about a backup
 func (d *Database) DoStatBackup(id ...string) error {
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	defer repo.Close()
 	col := repo.All()
 	col.AddFilterID(id...)

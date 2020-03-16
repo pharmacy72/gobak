@@ -1,8 +1,9 @@
-package backupitems
+package sqllite
 
 import (
 	"bytes"
 	"database/sql"
+	"github.com/pharmacy72/gobak/backupitems"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -57,10 +58,10 @@ func (c *sqliteCollection) doQuery() (*sql.Rows, error) {
 
 //TODO: Create repository
 
-func (c *sqliteCollection) Get() (res []*BackupItem, err error) {
+func (c *sqliteCollection) Get() (res []*backupitems.BackupItem, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	x := make(map[string]*BackupItem)
+	x := make(map[string]*backupitems.BackupItem)
 	rows, err := c.doQuery()
 	if err != nil {
 		return nil, err
@@ -76,14 +77,14 @@ func (c *sqliteCollection) Get() (res []*BackupItem, err error) {
 		if err := rows.Scan(&ID, &GUID, &GUIDPrev, &inlevel, &date, &status, &MD5, &pathToFile, &GUIDNext); err != nil {
 			return nil, err
 		}
-		item := New(config.Current().PathToBackupFolder)
+		item := backupitems.New(config.Current().PathToBackupFolder)
 		item.ID = ID
 		item.GUID = GUID
 		item.GUIDParent = GUIDPrev
 		item.Level = level.NewLevel(inlevel)
 		item.Hash = MD5
 		item.FileName = filepath.Base(pathToFile)
-		item.Status = StatusBackup(status)
+		item.Status = backupitems.StatusBackup(status)
 		item.Insert = false
 		item.Modified = false
 
@@ -100,7 +101,7 @@ func (c *sqliteCollection) Get() (res []*BackupItem, err error) {
 
 }
 
-func (c *sqliteCollection) AddFilterID(ids ...string) Collection {
+func (c *sqliteCollection) AddFilterID(ids ...string) backupitems.Collection {
 	if len(ids) > 0 {
 		c.filterIDs = append(c.filterIDs, ids...)
 	}

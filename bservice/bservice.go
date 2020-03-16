@@ -9,6 +9,7 @@ do
 */
 import (
 	"fmt"
+	"github.com/pharmacy72/gobak/sqllite"
 	"go.uber.org/zap"
 	"os"
 	"path/filepath"
@@ -145,7 +146,7 @@ func (b *Bservice) Restore(dest string, elem *backupitems.BackupItem, hash bool,
 
 //RestoreFromFile Restore backup into dest from filename,optional with to checking hash
 func (b *Bservice) RestoreFromFile(filename string, dest string, hash bool, verbose bool) error {
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
 	arr, err := backups.Get()
@@ -168,7 +169,7 @@ func (b *Bservice) RestoreFromFile(filename string, dest string, hash bool, verb
 
 //RestoreFromID Restore backup into dest by ID,optional with to checking hash
 func (b *Bservice) RestoreFromID(id int, dest string, hash bool, verbose bool) error {
-	repo := backupitems.GetRepository()
+	repo := sqllite.GetRepository()
 	defer repo.Close()
 	backups := repo.All()
 	backups.AddFilterID(strconv.Itoa(id))

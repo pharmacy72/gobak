@@ -3,21 +3,19 @@ package md5f
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"os"
 )
 
-var (
-	ErrFileCorrupt = errors.New("Check md5 is failed. File is corrupt")
-)
-
 type Md5App struct {
+	log *zap.Logger
 }
 
-func NewMd5App() *Md5App {
-	return &Md5App{}
+func NewMd5App(log *zap.Logger) *Md5App {
+	return &Md5App{
+		log: log,
+	}
 }
 
 //ComputeMd5 Md5 Calculates and returns a array of byte
@@ -29,7 +27,7 @@ func (c *Md5App) ComputeMd5(filePath string) ([]byte, error) {
 	}
 	defer func() {
 		if e := file.Close(); e != nil {
-			log.Println(e)
+			c.log.Error(e.Error())
 		}
 	}()
 

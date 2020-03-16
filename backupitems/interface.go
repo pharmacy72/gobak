@@ -1,12 +1,5 @@
 package backupitems
 
-import "errors"
-
-//Errors
-var (
-	ErrNotFound = errors.New("BackupItem not found")
-)
-
 type Repository interface {
 	Close() error
 	Append(item *BackupItem) error

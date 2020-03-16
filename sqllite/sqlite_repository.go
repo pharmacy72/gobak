@@ -1,7 +1,8 @@
-package backupitems
+package sqllite
 
 import (
 	"database/sql"
+	"github.com/pharmacy72/gobak/backupitems"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ type sqliteRepository struct {
 	db *sql.DB
 }
 
-func GetRepository() Repository {
+func GetRepository() backupitems.Repository {
 	once.Do(func() {
 		var err error
 		instance = &sqliteRepository{}
@@ -65,7 +66,7 @@ func (s *sqliteRepository) Close() error {
 	defer s.mu.Unlock()
 	return s.db.Close()
 }
-func (s *sqliteRepository) Append(item *BackupItem) error {
+func (s *sqliteRepository) Append(item *backupitems.BackupItem) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	stmt, err := s.db.Prepare("INSERT INTO backup(GUID,GUID_PREV,LEVEL,DATE,STATUS,MD5,PathToFile,GUID_NEXT) values(?,?,?,?,?,?,?,?)")
@@ -82,7 +83,7 @@ func (s *sqliteRepository) Append(item *BackupItem) error {
 	return nil
 }
 
-func (s *sqliteRepository) Update(item *BackupItem) error {
+func (s *sqliteRepository) Update(item *backupitems.BackupItem) error {
 	stmt, err := s.db.Prepare("update backup set STATUS=?,PathToFile=?, MD5=? where id=?")
 	if err != nil {
 		return err
@@ -96,7 +97,7 @@ func (s *sqliteRepository) Update(item *BackupItem) error {
 	return nil
 }
 
-func (s *sqliteRepository) Delete(item *BackupItem) error {
+func (s *sqliteRepository) Delete(item *backupitems.BackupItem) error {
 	stmt, err := s.db.Prepare("delete from  backup id=?")
 	if err != nil {
 		return err
@@ -109,12 +110,12 @@ func (s *sqliteRepository) Delete(item *BackupItem) error {
 	return nil
 }
 
-func (s *sqliteRepository) Refresh(item *BackupItem) error {
+func (s *sqliteRepository) Refresh(item *backupitems.BackupItem) error {
 	//TODO:
 	return nil
 }
 
-func (s *sqliteRepository) All() Collection {
+func (s *sqliteRepository) All() backupitems.Collection {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return &sqliteCollection{
