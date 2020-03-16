@@ -1,4 +1,4 @@
-# gobak 
+# nBackup go service gobak 
 firebird nbackup service on golang
 
 ![Go](https://github.com/pharmacy72/gobak/workflows/Go/badge.svg?branch=master)
