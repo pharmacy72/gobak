@@ -1,19 +1,9 @@
 package level
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
-)
-
-//Errors for LevelList
-var (
-	ErrLevelListNoSuccessively = errors.New("ListLevel: Level must be successively")
-	ErrLevelAlreadyExists      = errors.New("ListLevel: level already exists")
-	ErrTickPriorityBroken      = errors.New("ListLevel: broken priority tiks")
-	ErrTickAlreadyExists       = errors.New("ListLevel: tick already exists")
-	ErrLevelNotFound           = errors.New("ListLevel: level not found")
 )
 
 //A Item it a config item with Tick

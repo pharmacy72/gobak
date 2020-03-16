@@ -1,7 +1,6 @@
 package level
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -18,12 +17,6 @@ var (
 	TickDay    = "D"
 	TcikHour   = "H"
 	TickMinute = "N"
-)
-
-//Errors for ticks
-var (
-	ErrUnknowTickValue = errors.New("Unknown tick")
-	ErrBadTickPeriod   = errors.New("Bad period tick")
 )
 
 var (
@@ -49,7 +42,7 @@ func NewTick(tick string) Tick {
 	switch m {
 	case TickYear, TickMonth, TickWeek, TickDay, TcikHour, TickMinute:
 	default:
-		panic(ErrUnknowTickValue)
+		panic(ErrUnknownTickValue)
 	}
 	if period > 0 {
 		lenp, _ := lenperiod[Tick(m)]
@@ -171,7 +164,7 @@ func (t Tick) IsActual(crdate, ondate time.Time) (result bool) {
 		onper = ondate.Minute()
 		result = crper == onper
 	default:
-		panic(ErrUnknowTickValue)
+		panic(ErrUnknownTickValue)
 	}
 
 	if p > 1 {

@@ -28,7 +28,7 @@ func (f *DatabaseApp) LastLastChainIntoFirebird(backupItems []*backupitems.Backu
 
 	for _, itm := range backupItems {
 
-		stmt, err := conn.Prepare("SELECT Count(*) FROM rdb$backup_history where rdb$file_name =?")
+		stmt, err := conn.Prepare("SELECT Count(*) FROM rdb$backup_history where rdb$file_name = ?")
 		defer stmt.Close()
 		if err != nil {
 			return false, err

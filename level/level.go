@@ -1,13 +1,7 @@
 package level
 
 import (
-	"errors"
 	"fmt"
-)
-
-//Errors for levels
-var (
-	ErrLevelIsTopNotPrev = errors.New("level: level is top and not exists prev")
 )
 
 //A Level of a backup

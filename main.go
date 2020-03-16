@@ -1,7 +1,5 @@
 package main
 
-// 31.08.2015 created by Formeo
-
 import (
 	"fmt"
 	"github.com/getsentry/sentry-go"
@@ -36,7 +34,7 @@ func main() {
 	if err != nil {
 		sentry.CaptureException(err)
 	}
-	sMail:=smail.NewMailApp("smtpServerUrl", log, "emailTo string", "emailFrom string")
+	sMail := smail.NewMailApp("smtpServerUrl", log, "emailTo string", "emailFrom string")
 	app = application.NewApplication(sMail)
 	app.Run()
 	return

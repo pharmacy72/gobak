@@ -11,7 +11,7 @@ func (r *BackupItem) UnPackItem(outDir string) error {
 }
 
 //PackItem archives backup file,delOrgiginal - delete the original file
-func (r *BackupItem) PackItem(delOrgiginal bool) (err error) {
+func (r *BackupItem) PackItem(delOriginal bool) (err error) {
 
 	fileNameNoZip := r.FilePath()
 
@@ -23,7 +23,7 @@ func (r *BackupItem) PackItem(delOrgiginal bool) (err error) {
 	r.Modified = true
 	r.Status = r.Status | StatusArchived
 	r.FileName = r.FileName + ".zip"
-	if delOrgiginal {
+	if delOriginal {
 		err = os.Remove(fileNameNoZip)
 		if err != nil {
 			return err

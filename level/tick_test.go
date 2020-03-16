@@ -15,7 +15,7 @@ func TestTick(t *testing.T) {
 func TestTickcasterr(t *testing.T) {
 	defer func() {
 		e := recover()
-		if e != ErrUnknowTickValue || e == nil {
+		if e != ErrUnknownTickValue || e == nil {
 			t.Error("Excepted ErrUnknowTickValue")
 		}
 	}()
@@ -170,12 +170,12 @@ func TestInPeriod(t *testing.T) {
 func TestTickIsActualFail(t *testing.T) {
 	defer func() {
 		e := recover()
-		if e != ErrUnknowTickValue || e == nil {
-			t.Error("Excepted ErrUnknowTickValue")
+		if e != ErrUnknownTickValue || e == nil {
+			t.Error("Excepted ErrUnknownTickValue")
 		}
 	}()
 
 	tick := Tick("ERR")
 	tick.IsActual(time.Now(), time.Now())
-	t.Error("Excepted error ErrUnknowTickValue")
+	t.Error("Excepted error ErrUnknownTickValue")
 }

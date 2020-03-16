@@ -3,8 +3,8 @@ package zip
 import (
 	"archive/zip"
 	"github.com/pharmacy72/gobak/fileutils"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -12,16 +12,25 @@ import (
 type tst func() error
 
 type CompressApp struct {
-	fileutils *fileutils.FileUtils
+	fileUtils *fileutils.FileUtils
+	log       *zap.Logger
+}
+
+func CompressAppNew(fileUtils *fileutils.FileUtils, log *zap.Logger) *CompressApp {
+	return &CompressApp{
+		fileUtils: fileUtils,
+		log:       log,
+	}
+
 }
 
 //DoZipFile pack file "filename" to the destination file "filename".zip
 func (z *CompressApp) DoZipFile(filename string) error {
 	//check exist file
 
-	if z.fileutils.Exists(filename + ".zip") {
+	if z.fileUtils.Exists(filename + ".zip") {
 		err := fileutils.ErrFileAlreadyExists
-		log.Println("err", err)
+		z.log.Error(err.Error())
 		return err
 	}
 	//check exist file end
@@ -31,8 +40,8 @@ func (z *CompressApp) DoZipFile(filename string) error {
 	}
 	defer z.checkErrorFunc(newFile.Close)
 
-	zipit := zip.NewWriter(newFile)
-	defer z.checkErrorFunc(zipit.Close)
+	zipIt := zip.NewWriter(newFile)
+	defer z.checkErrorFunc(zipIt.Close)
 
 	zipFile, err := os.Open(filename)
 	if err != nil {
@@ -53,7 +62,7 @@ func (z *CompressApp) DoZipFile(filename string) error {
 
 	header.Method = zip.Deflate
 
-	writer, err := zipit.CreateHeader(header)
+	writer, err := zipIt.CreateHeader(header)
 	if err != nil {
 		return err
 	}
